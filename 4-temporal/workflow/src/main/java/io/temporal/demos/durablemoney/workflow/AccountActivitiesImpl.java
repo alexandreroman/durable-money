@@ -19,33 +19,39 @@ class AccountActivitiesImpl implements AccountActivities {
     }
 
     @Override
-    public void debitAccount(UUID accountId, BigDecimal amount, UUID transferId) {
-        restClient.post()
-            .uri("/accounts/{id}/debit", accountId)
-            .body(new DebitCreditRequest(amount, transferId))
-            .retrieve()
-            .toBodilessEntity();
+    public DebitOutput debitAccount(DebitInput input) {
+        var view = restClient.post()
+                .uri("/accounts/{id}/debit", input.accountId())
+                .body(new DebitCreditRequest(input.amount(), input.transferId()))
+                .retrieve()
+                .body(AccountView.class);
+        return new DebitOutput(view.balance());
     }
 
     @Override
-    public void creditAccount(UUID accountId, BigDecimal amount, UUID transferId) {
-        restClient.post()
-            .uri("/accounts/{id}/credit", accountId)
-            .body(new DebitCreditRequest(amount, transferId))
-            .retrieve()
-            .toBodilessEntity();
+    public CreditOutput creditAccount(CreditInput input) {
+        var view = restClient.post()
+                .uri("/accounts/{id}/credit", input.accountId())
+                .body(new DebitCreditRequest(input.amount(), input.transferId()))
+                .retrieve()
+                .body(AccountView.class);
+        return new CreditOutput(view.balance());
     }
 
     @Override
-    public void reverseDebit(UUID accountId, BigDecimal amount, UUID transferId) {
-        // Compensating action: credit the source account back to reverse a prior debit
-        restClient.post()
-            .uri("/accounts/{id}/credit", accountId)
-            .body(new DebitCreditRequest(amount, transferId))
-            .retrieve()
-            .toBodilessEntity();
+    public ReverseDebitOutput reverseDebit(ReverseDebitInput input) {
+        // Compensating action: credit the source account back to reverse a prior debit.
+        var view = restClient.post()
+                .uri("/accounts/{id}/credit", input.accountId())
+                .body(new DebitCreditRequest(input.amount(), input.transferId()))
+                .retrieve()
+                .body(AccountView.class);
+        return new ReverseDebitOutput(view.balance());
     }
 
     private record DebitCreditRequest(BigDecimal amount, UUID transferId) {
+    }
+
+    private record AccountView(UUID id, BigDecimal balance) {
     }
 }

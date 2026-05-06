@@ -9,11 +9,29 @@ import java.util.UUID;
 @ActivityInterface
 public interface AccountActivities {
     @ActivityMethod
-    void debitAccount(UUID accountId, BigDecimal amount, UUID transferId);
+    DebitOutput debitAccount(DebitInput input);
 
     @ActivityMethod
-    void creditAccount(UUID accountId, BigDecimal amount, UUID transferId);
+    CreditOutput creditAccount(CreditInput input);
 
     @ActivityMethod
-    void reverseDebit(UUID accountId, BigDecimal amount, UUID transferId);
+    ReverseDebitOutput reverseDebit(ReverseDebitInput input);
+
+    record DebitInput(UUID accountId, BigDecimal amount, UUID transferId) {
+    }
+
+    record DebitOutput(BigDecimal newBalance) {
+    }
+
+    record CreditInput(UUID accountId, BigDecimal amount, UUID transferId) {
+    }
+
+    record CreditOutput(BigDecimal newBalance) {
+    }
+
+    record ReverseDebitInput(UUID accountId, BigDecimal amount, UUID transferId) {
+    }
+
+    record ReverseDebitOutput(BigDecimal newBalance) {
+    }
 }

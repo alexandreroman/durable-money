@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static io.temporal.client.WorkflowClient.start;
+
 @RestController
 @RequestMapping("/transfers")
 class TransferController {
@@ -28,7 +30,7 @@ class TransferController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Map<String, String> startTransfer(@RequestBody @Valid NewTransfer request) {
         var transferId = UUID.randomUUID();
-        var input = new TransferInput(
+        var input = new TransferWorkflow.Input(
             transferId,
             request.sourceAccountId(),
             request.targetAccountId(),
@@ -39,7 +41,7 @@ class TransferController {
             .setTaskQueue(TransferWorkflow.TASK_QUEUE)
             .build();
         var stub = workflowClient.newWorkflowStub(TransferWorkflow.class, options);
-        WorkflowClient.start(stub::execute, input);
+        start(stub::execute, input);
         return Map.of("transferId", transferId.toString());
     }
 
