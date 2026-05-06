@@ -7,7 +7,7 @@ spring:
     password: ${DB_PASS:demo}
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: 5672
