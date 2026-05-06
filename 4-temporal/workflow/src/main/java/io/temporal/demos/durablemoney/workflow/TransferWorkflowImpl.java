@@ -3,11 +3,13 @@ package io.temporal.demos.durablemoney.workflow;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ActivityFailure;
+import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Saga;
 import io.temporal.workflow.Workflow;
 
 import java.time.Duration;
 
+@WorkflowImpl(workers = "transfer")
 class TransferWorkflowImpl implements TransferWorkflow {
 
     @Override

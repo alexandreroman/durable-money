@@ -6,6 +6,8 @@ import io.temporal.workflow.WorkflowMethod;
 @WorkflowInterface
 public interface TransferWorkflow {
 
+    String TASK_QUEUE = "MONEY_TRANSFER";
+
     @WorkflowMethod
     TransferResult execute(TransferInput input);
 }

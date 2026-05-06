@@ -35,7 +35,7 @@ class TransferController {
         );
         var options = WorkflowOptions.newBuilder()
             .setWorkflowId(transferId.toString())
-            .setTaskQueue(TemporalConfig.TASK_QUEUE)
+            .setTaskQueue(TransferWorkflow.TASK_QUEUE)
             .build();
         var stub = workflowClient.newWorkflowStub(TransferWorkflow.class, options);
         WorkflowClient.start(stub::execute, input);

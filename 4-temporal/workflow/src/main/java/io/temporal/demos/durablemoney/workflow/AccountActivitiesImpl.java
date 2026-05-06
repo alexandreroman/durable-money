@@ -1,21 +1,21 @@
 package io.temporal.demos.durablemoney.workflow;
 
-import org.springframework.stereotype.Component;
+import io.temporal.spring.boot.ActivityImpl;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@Component
+@ActivityImpl(workers = "transfer")
 class AccountActivitiesImpl implements AccountActivities {
 
     private final RestClient restClient;
 
-    AccountActivitiesImpl(RestClient accountRestClient) {
-        this.restClient = accountRestClient;
+    AccountActivitiesImpl(@Value("${account.service.url}") String baseUrl,
+                          RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.clone().baseUrl(baseUrl).build();
     }
-
-    record DebitCreditRequest(BigDecimal amount, UUID transferId) {}
 
     @Override
     public void debitAccount(UUID accountId, BigDecimal amount, UUID transferId) {
@@ -43,5 +43,8 @@ class AccountActivitiesImpl implements AccountActivities {
             .body(new DebitCreditRequest(amount, transferId))
             .retrieve()
             .toBodilessEntity();
+    }
+
+    private record DebitCreditRequest(BigDecimal amount, UUID transferId) {
     }
 }

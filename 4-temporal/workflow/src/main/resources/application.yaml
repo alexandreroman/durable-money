@@ -4,11 +4,18 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  temporal:
+    namespace: ${TEMPORAL_NAMESPACE:default}
+    connection:
+      target: ${TEMPORAL_ADDRESS:localhost:7233}
+    workers-auto-discovery:
+      packages: io.temporal.demos
+    workers:
+      - task-queue: MONEY_TRANSFER
+        name: transfer
 account:
   service:
     url: ${ACCOUNT_SERVICE_URL:http://localhost:8081}
-temporal:
-  host: ${TEMPORAL_HOST:localhost}
 management:
   server:
     port: ${MANAGEMENT_PORT:8081}
