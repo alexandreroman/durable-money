@@ -8,7 +8,6 @@ import java.util.UUID;
 
 @ActivityInterface
 public interface AccountActivities {
-
     @ActivityMethod
     void debitAccount(UUID accountId, BigDecimal amount, UUID transferId);
 
