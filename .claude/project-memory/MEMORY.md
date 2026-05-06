@@ -14,3 +14,4 @@
 - [Spring Boot 4 HttpClientSettings rename](references/project_spring_boot_4_http_client.md) — Boot 4 renamed ClientHttpRequestFactorySettings to HttpClientSettings; needs explicit spring-boot-http-client dep
 - [Temporal Spring Boot starter: activities need @Component AND register-activity-beans: true](references/feedback_temporal_starter_activity_beans.md) — @ActivityImpl alone does not register activities under the starter
 - [Slim jlink JREs for Temporal apps need jdk.management](references/feedback_jlink_temporal_modules.md) — Worker static initializer needs com.sun.management.OperatingSystemMXBean from jdk.management
+- [Do not add CDS to Dockerfiles](references/feedback_no_cds.md) — skip Spring Boot CDS training runs in module Dockerfiles; tutorial clarity beats marginal startup gains
