@@ -18,3 +18,4 @@
 - [Keep application-dev.yaml in every module](references/feedback_keep_application_dev_yaml.md) — preserve per-module dev profile files even if no automation activates them
 - [Keep spring-boot-devtools in every module](references/feedback_keep_devtools.md) — devtools stays as runtime/optional in every pom.xml for local IDE workflows
 - [Keep workflow-packages: io.temporal.demos broad](references/feedback_temporal_workflow_packages_broad.md) — use the wider scan root for Temporal workflow auto-discovery, not a tighter sub-package
+- [Reference nested types by simple name](references/feedback_unqualified_nested_types.md) — import nested records/enums so they read as DebitInput, not AccountActivities.DebitInput; inherited interface members need no import
