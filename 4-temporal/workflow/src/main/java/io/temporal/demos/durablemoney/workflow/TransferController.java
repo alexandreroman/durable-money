@@ -1,6 +1,7 @@
 package io.temporal.demos.durablemoney.workflow;
 
 import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowNotFoundException;
 import io.temporal.client.WorkflowOptions;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
@@ -45,20 +46,19 @@ class TransferController {
     @GetMapping("/{workflowId}")
     Map<String, Object> getTransfer(@PathVariable String workflowId) {
         var stub = workflowClient.newUntypedWorkflowStub(workflowId, Optional.empty(), Optional.empty());
-        try {
-            var desc = stub.describe();
-            return Map.of(
-                "workflowId", workflowId,
-                "status", desc.getStatus().toString()
-            );
-        } catch (io.temporal.client.WorkflowNotFoundException e) {
-            throw new WorkflowNotFoundException(workflowId);
-        }
+        var desc = stub.describe();
+        return Map.of(
+            "workflowId", workflowId,
+            "status", desc.getStatus().toString()
+        );
     }
 
     @ExceptionHandler(WorkflowNotFoundException.class)
     ProblemDetail handleNotFound(WorkflowNotFoundException e) {
-        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+        var problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.NOT_FOUND,
+            "Workflow not found: " + e.getExecution().getWorkflowId()
+        );
         problem.setTitle("Workflow not found");
         return problem;
     }
