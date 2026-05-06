@@ -19,10 +19,11 @@ RUN jlink \
         --output /opt/jre
 
 FROM alpine:3.21
-RUN apk add --no-cache tzdata curl && \
+RUN apk add --no-cache curl && \
     addgroup -S app && adduser -S -G app -u 1001 app
 ENV JAVA_HOME=/opt/jre
 ENV PATH=$JAVA_HOME/bin:$PATH
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
 COPY --from=builder /opt/jre /opt/jre
 WORKDIR /app
 COPY --from=builder --chown=app:app /app/extracted/dependencies/ ./
