@@ -1,6 +1,12 @@
 package io.temporal.demos.durablemoney.monolith.transfer;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -30,9 +36,7 @@ class Transfer {
     void onCreate() {
         var now = Instant.now();
         createdAt = now;
-        if (completedAt == null) {
-            completedAt = now;
-        }
+        completedAt = now;
     }
 
     UUID getId() { return id; }
@@ -44,5 +48,4 @@ class Transfer {
     void setAmount(BigDecimal amount) { this.amount = amount; }
     Instant getCreatedAt() { return createdAt; }
     Instant getCompletedAt() { return completedAt; }
-    void setCompletedAt(Instant completedAt) { this.completedAt = completedAt; }
 }
