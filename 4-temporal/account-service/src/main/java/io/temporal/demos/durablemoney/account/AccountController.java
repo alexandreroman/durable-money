@@ -74,7 +74,7 @@ class AccountController {
 
     record AccountView(UUID id, String owner, BigDecimal balance, Instant createdAt) {
         static AccountView from(Account a) {
-            return new AccountView(a.getId(), a.getOwner(), a.getBalance(), a.getCreatedAt());
+            return new AccountView(a.id(), a.owner(), a.balance(), a.createdAt());
         }
     }
 }
