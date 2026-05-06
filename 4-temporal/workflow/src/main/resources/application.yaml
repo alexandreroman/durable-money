@@ -1,13 +1,19 @@
 spring:
   application:
     name: workflow
-server:
-  port: 8080
+  mvc:
+    problemdetails:
+      enabled: true
 account:
   service:
     url: ${ACCOUNT_SERVICE_URL:http://localhost:8081}
 temporal:
   host: ${TEMPORAL_HOST:localhost}
+management:
+  server:
+    port: ${MANAGEMENT_PORT:8081}
+server:
+  port: ${PORT:8080}
 logging:
   structured:
     format:

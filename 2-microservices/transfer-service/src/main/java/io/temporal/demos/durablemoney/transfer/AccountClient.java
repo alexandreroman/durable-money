@@ -9,26 +9,29 @@ import java.util.UUID;
 
 @Component
 class AccountClient {
-
     private final RestClient restClient;
 
-    AccountClient(@Value("${account.service.url:http://localhost:8081}") String baseUrl) {
-        this.restClient = RestClient.builder().baseUrl(baseUrl).build();
+    AccountClient(@Value("${account.service.url}") String baseUrl,
+                  RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.clone().baseUrl(baseUrl).build();
     }
 
-    void debit(UUID accountId, BigDecimal amount, UUID transferId) {
+    void debit(UUID accountId, BigDecimal amount) {
         restClient.post()
-            .uri("/accounts/{id}/debit", accountId)
-            .body(new DebitCreditRequest(amount, transferId))
-            .retrieve()
-            .toBodilessEntity();
+                .uri("/accounts/{id}/debit", accountId)
+                .body(new DebitCreditRequest(amount))
+                .retrieve()
+                .toBodilessEntity();
     }
 
-    void credit(UUID accountId, BigDecimal amount, UUID transferId) {
+    void credit(UUID accountId, BigDecimal amount) {
         restClient.post()
-            .uri("/accounts/{id}/credit", accountId)
-            .body(new DebitCreditRequest(amount, transferId))
-            .retrieve()
-            .toBodilessEntity();
+                .uri("/accounts/{id}/credit", accountId)
+                .body(new DebitCreditRequest(amount))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    private record DebitCreditRequest(BigDecimal amount) {
     }
 }

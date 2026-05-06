@@ -8,8 +8,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
-public class AccountService {
-
+class AccountService {
     private final AccountRepository accountRepository;
 
     AccountService(AccountRepository accountRepository) {
@@ -17,36 +16,39 @@ public class AccountService {
     }
 
     @Transactional
-    public AccountResponse createAccount(AccountRequest request) {
+    Account createAccount(String owner, BigDecimal initialBalance) {
         var account = new Account();
-        account.setOwner(request.owner());
-        account.setBalance(request.initialBalance());
-        return AccountResponse.from(accountRepository.save(account));
+        account.setOwner(owner);
+        account.setBalance(initialBalance);
+        return accountRepository.save(account);
     }
 
     @Transactional(readOnly = true)
-    public AccountResponse getAccount(UUID id) {
+    Account getAccount(UUID id) {
         return accountRepository.findById(id)
-            .map(AccountResponse::from)
-            .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
     }
 
     @Transactional
-    public AccountResponse debit(UUID id, BigDecimal amount) {
+    Account debit(UUID id, BigDecimal amount) {
+        // Locked read + check + write + commit form a critical section serialized by PostgreSQL on
+        // the account row. JPA dirty checking flushes the balance update at commit, so no explicit
+        // save() is needed. Throwing from inside @Transactional triggers an automatic rollback.
         var account = accountRepository.findByIdWithLock(id)
-            .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
         if (account.getBalance().compareTo(amount) < 0) {
             throw new InsufficientFundsException("Insufficient funds in account " + id);
         }
         account.setBalance(account.getBalance().subtract(amount));
-        return AccountResponse.from(accountRepository.save(account));
+        return account;
     }
 
     @Transactional
-    public AccountResponse credit(UUID id, BigDecimal amount) {
+    Account credit(UUID id, BigDecimal amount) {
+        // Pessimistic lock kept symmetric with debit() to serialize concurrent updates on the row.
         var account = accountRepository.findByIdWithLock(id)
-            .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
         account.setBalance(account.getBalance().add(amount));
-        return AccountResponse.from(accountRepository.save(account));
+        return account;
     }
 }

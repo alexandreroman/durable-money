@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 class AccountCommandListener {
-
     private static final Logger log = LoggerFactory.getLogger(AccountCommandListener.class);
 
     private final AccountService accountService;
@@ -23,10 +22,9 @@ class AccountCommandListener {
     void handleCommand(AccountCommandMessage cmd) {
         AccountResultMessage result;
         try {
-            if ("DEBIT".equals(cmd.type())) {
-                accountService.debit(cmd.accountId(), cmd.amount());
-            } else {
-                accountService.credit(cmd.accountId(), cmd.amount());
+            switch (cmd.type()) {
+                case DEBIT -> accountService.debit(cmd.accountId(), cmd.amount());
+                case CREDIT -> accountService.credit(cmd.accountId(), cmd.amount());
             }
             result = new AccountResultMessage(cmd.transferId(), cmd.accountId(), cmd.type(), true, null);
             log.info("Processed {} for transfer {}", cmd.type(), cmd.transferId());

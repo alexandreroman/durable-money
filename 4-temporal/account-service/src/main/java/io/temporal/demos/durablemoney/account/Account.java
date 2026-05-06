@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "accounts")
-public class Account {
+class Account {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -19,9 +19,6 @@ public class Account {
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal balance;
 
-    @Version
-    private Long version;
-
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -30,11 +27,10 @@ public class Account {
         createdAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public String getOwner() { return owner; }
-    public void setOwner(String owner) { this.owner = owner; }
-    public BigDecimal getBalance() { return balance; }
-    public void setBalance(BigDecimal balance) { this.balance = balance; }
-    public Long getVersion() { return version; }
-    public Instant getCreatedAt() { return createdAt; }
+    UUID getId() { return id; }
+    String getOwner() { return owner; }
+    void setOwner(String owner) { this.owner = owner; }
+    BigDecimal getBalance() { return balance; }
+    void setBalance(BigDecimal balance) { this.balance = balance; }
+    Instant getCreatedAt() { return createdAt; }
 }

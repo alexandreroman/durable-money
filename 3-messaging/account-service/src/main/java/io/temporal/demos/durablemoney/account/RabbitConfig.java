@@ -1,14 +1,13 @@
 package io.temporal.demos.durablemoney.account;
 
 import org.springframework.amqp.core.*;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class RabbitConfig {
-
     @Bean
     DirectExchange moneyExchange() {
         return new DirectExchange("money.exchange", true, false);
@@ -44,6 +43,6 @@ class RabbitConfig {
 
     @Bean
     MessageConverter messageConverter() {
-        return new Jackson2JsonMessageConverter();
+        return new JacksonJsonMessageConverter();
     }
 }

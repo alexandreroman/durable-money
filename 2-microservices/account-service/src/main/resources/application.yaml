@@ -2,16 +2,24 @@ spring:
   application:
     name: account-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5432/accountdb
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/moneydb?currentSchema=account
     username: ${DB_USER:demo}
     password: ${DB_PASS:demo}
+  sql:
+    init:
+      mode: always
   jpa:
     hibernate:
-      ddl-auto: validate
-  flyway:
-    enabled: true
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+  mvc:
+    problemdetails:
+      enabled: true
+management:
+  server:
+    port: ${MANAGEMENT_PORT:9081}
 server:
-  port: 8081
+  port: ${PORT:9080}
 logging:
   structured:
     format:

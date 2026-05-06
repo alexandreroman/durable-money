@@ -1,14 +1,23 @@
 package io.temporal.demos.durablemoney.transfer;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "transfers")
-public class Transfer {
-
+class Transfer {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -45,17 +54,17 @@ public class Transfer {
         updatedAt = Instant.now();
     }
 
-    public UUID getId() { return id; }
-    public UUID getSourceAccountId() { return sourceAccountId; }
-    public void setSourceAccountId(UUID v) { this.sourceAccountId = v; }
-    public UUID getTargetAccountId() { return targetAccountId; }
-    public void setTargetAccountId(UUID v) { this.targetAccountId = v; }
-    public BigDecimal getAmount() { return amount; }
-    public void setAmount(BigDecimal v) { this.amount = v; }
-    public TransferStatus getStatus() { return status; }
-    public void setStatus(TransferStatus v) { this.status = v; }
-    public String getErrorMessage() { return errorMessage; }
-    public void setErrorMessage(String v) { this.errorMessage = v; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    UUID getId() { return id; }
+    UUID getSourceAccountId() { return sourceAccountId; }
+    void setSourceAccountId(UUID sourceAccountId) { this.sourceAccountId = sourceAccountId; }
+    UUID getTargetAccountId() { return targetAccountId; }
+    void setTargetAccountId(UUID targetAccountId) { this.targetAccountId = targetAccountId; }
+    BigDecimal getAmount() { return amount; }
+    void setAmount(BigDecimal amount) { this.amount = amount; }
+    TransferStatus getStatus() { return status; }
+    void setStatus(TransferStatus status) { this.status = status; }
+    String getErrorMessage() { return errorMessage; }
+    void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+    Instant getCreatedAt() { return createdAt; }
+    Instant getUpdatedAt() { return updatedAt; }
 }

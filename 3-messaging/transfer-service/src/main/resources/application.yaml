@@ -2,21 +2,25 @@ spring:
   application:
     name: transfer-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5432/transferdb
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/moneydb?currentSchema=transfer
     username: ${DB_USER:demo}
     password: ${DB_PASS:demo}
   jpa:
     hibernate:
-      ddl-auto: validate
-  flyway:
-    enabled: true
+      ddl-auto: create-drop
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: 5672
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASS:guest}
+  mvc:
+    problemdetails:
+      enabled: true
+management:
+  server:
+    port: ${MANAGEMENT_PORT:8081}
 server:
-  port: 8080
+  port: ${PORT:8080}
 logging:
   structured:
     format:

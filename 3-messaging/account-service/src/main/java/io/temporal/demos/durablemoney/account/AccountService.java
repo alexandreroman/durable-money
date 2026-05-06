@@ -9,7 +9,6 @@ import java.util.UUID;
 
 @Service
 class AccountService {
-
     private final AccountRepository accountRepository;
 
     AccountService(AccountRepository accountRepository) {
@@ -27,19 +26,23 @@ class AccountService {
     @Transactional
     void debit(UUID id, BigDecimal amount) {
         var account = accountRepository.findByIdWithLock(id)
-            .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
         if (account.getBalance().compareTo(amount) < 0) {
             throw new InsufficientFundsException("Insufficient funds in account " + id);
         }
         account.setBalance(account.getBalance().subtract(amount));
-        accountRepository.save(account);
     }
 
     @Transactional
     void credit(UUID id, BigDecimal amount) {
         var account = accountRepository.findByIdWithLock(id)
-            .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
         account.setBalance(account.getBalance().add(amount));
-        accountRepository.save(account);
+    }
+
+    static class InsufficientFundsException extends RuntimeException {
+        InsufficientFundsException(String message) {
+            super(message);
+        }
     }
 }

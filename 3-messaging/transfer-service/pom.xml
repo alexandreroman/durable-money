@@ -9,10 +9,9 @@
         <relativePath/>
     </parent>
     <groupId>io.temporal.demos.durablemoney</groupId>
-    <artifactId>transfer-service</artifactId>
+    <artifactId>durable-money-messaging-transfer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>transfer-service</name>
-    <description>3 - Messaging: Transfer Service</description>
+    <name>Durable Money :: Messaging :: Transfer</name>
     <properties>
         <java.version>25</java.version>
     </properties>
@@ -38,14 +37,6 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-flyway</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jackson</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
@@ -55,11 +46,6 @@
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

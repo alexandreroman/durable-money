@@ -9,10 +9,9 @@
         <relativePath/>
     </parent>
     <groupId>io.temporal.demos.durablemoney</groupId>
-    <artifactId>account-service</artifactId>
+    <artifactId>durable-money-temporal-account-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>account-service</name>
-    <description>4 - Temporal: Account Service</description>
+    <name>Durable Money :: Temporal :: Account Service</name>
     <properties>
         <java.version>25</java.version>
     </properties>
@@ -34,14 +33,6 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-flyway</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jackson</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
@@ -51,11 +42,6 @@
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

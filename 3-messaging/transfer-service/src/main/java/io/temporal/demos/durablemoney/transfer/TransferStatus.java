@@ -1,5 +1,5 @@
 package io.temporal.demos.durablemoney.transfer;
 
 enum TransferStatus {
-    PENDING, DEBITING, CREDITING, COMPLETED, FAILED
+    DEBITING, CREDITING, COMPLETED, FAILED
 }
