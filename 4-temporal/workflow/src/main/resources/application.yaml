@@ -9,8 +9,8 @@ spring:
     connection:
       target: ${TEMPORAL_ADDRESS:localhost:7233}
     workers-auto-discovery:
+      enabled: true
       workflow-packages: io.temporal.demos
-      register-activity-beans: true
     workers:
       - task-queue: MONEY_TRANSFER
         name: transfer
