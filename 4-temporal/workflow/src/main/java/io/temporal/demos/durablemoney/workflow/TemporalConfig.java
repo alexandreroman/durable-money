@@ -6,9 +6,13 @@ import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
+
+import java.time.Duration;
 
 @Configuration
 class TemporalConfig {
@@ -45,6 +49,10 @@ class TemporalConfig {
     @Bean
     RestClient accountRestClient(
             @Value("${account.service.url:http://localhost:8081}") String baseUrl) {
-        return RestClient.builder().baseUrl(baseUrl).build();
+        var settings = HttpClientSettings.defaults()
+                .withConnectTimeout(Duration.ofSeconds(5))
+                .withReadTimeout(Duration.ofSeconds(10));
+        var requestFactory = ClientHttpRequestFactoryBuilder.detect().build(settings);
+        return RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory).build();
     }
 }
