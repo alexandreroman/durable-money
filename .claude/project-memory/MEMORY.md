@@ -15,3 +15,6 @@
 - [Temporal Spring Boot starter: activities need @Component AND register-activity-beans: true](references/feedback_temporal_starter_activity_beans.md) — @ActivityImpl alone does not register activities under the starter
 - [Slim jlink JREs for Temporal apps need jdk.management](references/feedback_jlink_temporal_modules.md) — Worker static initializer needs com.sun.management.OperatingSystemMXBean from jdk.management
 - [Do not add CDS to Dockerfiles](references/feedback_no_cds.md) — skip Spring Boot CDS training runs in module Dockerfiles; tutorial clarity beats marginal startup gains
+- [Keep application-dev.yaml in every module](references/feedback_keep_application_dev_yaml.md) — preserve per-module dev profile files even if no automation activates them
+- [Keep spring-boot-devtools in every module](references/feedback_keep_devtools.md) — devtools stays as runtime/optional in every pom.xml for local IDE workflows
+- [Keep workflow-packages: io.temporal.demos broad](references/feedback_temporal_workflow_packages_broad.md) — use the wider scan root for Temporal workflow auto-discovery, not a tighter sub-package
