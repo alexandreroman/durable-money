@@ -10,7 +10,7 @@ See [README.md](README.md) for full documentation.
 - Java 25, Spring Boot 4.0.5
 - PostgreSQL 17 (all modules)
 - RabbitMQ 4 (module 3 only)
-- Temporal SDK 1.27.0 (module 4 only)
+- Temporal SDK 1.35.0 (module 4 only)
 - Docker Compose (each module ships its own)
 
 ## Build & run

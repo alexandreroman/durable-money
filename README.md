@@ -32,7 +32,7 @@ hard and *how* Temporal solves the problem.
 
 Each module is fully independent — no shared code, no
 parent POM. Navigate into any numbered directory and run
-`docker-compose up --build` to start it.
+`docker compose up --build` to start it.
 
 | Module              | Approach           | Key concept                             |
 | ------------------- | ------------------ | --------------------------------------- |
@@ -54,7 +54,7 @@ Start a module:
 
 ```bash
 cd 1-monolith
-docker-compose up --build
+docker compose up --build
 ```
 
 The API is available at `http://localhost:8080`.
@@ -63,8 +63,9 @@ The API is available at `http://localhost:8080`.
 
 ### Pre-loaded demo accounts
 
-Module 1 seeds two accounts on startup so you can
-transfer money without first creating any:
+All four modules ship the same `data.sql` seed, so the
+following two accounts exist on startup in every module
+and the same source/target IDs work everywhere:
 
 | Owner | Account ID                             | Initial balance |
 | ----- | -------------------------------------- | --------------- |
@@ -72,10 +73,7 @@ transfer money without first creating any:
 | Bob   | `d2ff0ba8-79c4-4ea7-b297-26847d553d63` | 100.00          |
 
 ```bash
-# List the seeded accounts
-curl -s http://localhost:8080/accounts | jq .
-
-# Transfer 200.00 from Alice to Bob
+# Transfer 200.00 from Alice to Bob (works on all modules)
 curl -s -X POST http://localhost:8080/transfers \
   -H "Content-Type: application/json" \
   -d '{
@@ -83,6 +81,13 @@ curl -s -X POST http://localhost:8080/transfers \
     "targetAccountId": "d2ff0ba8-79c4-4ea7-b297-26847d553d63",
     "amount": 200.00
   }' | jq .
+```
+
+Listing accounts is only exposed by module 1:
+
+```bash
+# List the seeded accounts (module 1 only)
+curl -s http://localhost:8080/accounts | jq .
 ```
 
 ### Create your own accounts
@@ -99,9 +104,19 @@ curl -s -X POST http://localhost:8080/accounts \
   -d '{"owner": "Dave", "initialBalance": 50.00}' | jq .
 ```
 
-The same curl commands work against all four modules.
-Modules 2–4 start with an empty database, so you will
-need to create accounts before transferring.
+### Transfer responses across modules
+
+The `POST /transfers` request body is identical in every
+module, but the response body and HTTP status evolve as
+the architecture moves from synchronous-atomic to
+asynchronous-durable:
+
+| Module | Status       | Response body                                              |
+| ------ | ------------ | ---------------------------------------------------------- |
+| 1      | 200 OK       | full Transfer (`id`, accounts, `amount`, `createdAt`, `completedAt`) — synchronous, atomic |
+| 2      | 200 OK       | `{transferId, status, message}` — synchronous, may leave money lost on failure |
+| 3      | 202 Accepted | `{id, status, message, createdAt, updatedAt}` — async, poll `GET /transfers/{id}` |
+| 4      | 202 Accepted | `{transferId}` — async via Temporal; observe in the UI or `GET /transfers/{workflowId}` |
 
 ### Module 4 — Temporal UI
 
@@ -185,7 +200,7 @@ variables with sensible defaults for local development.
 | `DB_PASS`             | PostgreSQL password               | `demo`               |
 | `ACCOUNT_SERVICE_URL` | Account service base URL (2, 4)   | `http://localhost:9080` |
 | `RABBITMQ_HOST`       | RabbitMQ hostname (3)             | `localhost`          |
-| `TEMPORAL_HOST`       | Temporal Server hostname (4)      | `localhost`          |
+| `TEMPORAL_ADDRESS`    | Temporal Server address (4)       | `localhost:7233`     |
 
 ## License
 
