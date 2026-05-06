@@ -1,9 +1,9 @@
 FROM maven:3-eclipse-temurin-25-alpine AS builder
 WORKDIR /app
 COPY pom.xml .
-RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline -q
+RUN --mount=type=cache,id=maven,target=/root/.m2 mvn dependency:go-offline -q
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 mvn package -DskipTests -q && \
+RUN --mount=type=cache,id=maven,target=/root/.m2 mvn package -DskipTests -q && \
     cp target/*.jar app.jar && \
     java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 
