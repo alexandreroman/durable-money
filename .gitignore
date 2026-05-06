@@ -1,0 +1,53 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+*.nar
+dependency-reduced-pom.xml
+buildNumber.properties
+release.properties
+.flattened-pom.xml
+
+# Spring Boot
+HELP.md
+application-local.properties
+application-local.yml
+application-local.yaml
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+
+# VS Code
+.vscode/
+.factorypath
+
+# NetBeans
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+nb-configuration.xml
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Local environment
+.env
+.env.local

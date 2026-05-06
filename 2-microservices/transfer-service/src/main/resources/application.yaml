@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: transfer-service
+server:
+  port: 8080
+account:
+  service:
+    url: ${ACCOUNT_SERVICE_URL:http://localhost:8081}
+logging:
+  structured:
+    format:
+      console: ecs

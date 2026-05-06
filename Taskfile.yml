@@ -1,0 +1,60 @@
+version: '3'
+
+vars:
+  MODULES:
+    - 1-monolith
+    - 2-microservices/account-service
+    - 2-microservices/transfer-service
+    - 3-messaging/account-service
+    - 3-messaging/transfer-service
+    - 4-temporal/account-service
+    - 4-temporal/workflow
+
+tasks:
+  default:
+    desc: Compile every Maven module (alias for build)
+    cmds:
+      - task: build
+
+  build:
+    desc: Compile every Maven module
+    cmds:
+      - for: { var: MODULES }
+        task: _mvn
+        vars:
+          MODULE: '{{.ITEM}}'
+          MVN_ARGS: '-B package -DskipTests'
+
+  build:offline:
+    desc: Compile every Maven module using the local repository only
+    cmds:
+      - for: { var: MODULES }
+        task: _mvn
+        vars:
+          MODULE: '{{.ITEM}}'
+          MVN_ARGS: '-B -o package -DskipTests'
+
+  clean:
+    desc: Clean build output in every Maven module
+    cmds:
+      - for: { var: MODULES }
+        task: _mvn
+        vars:
+          MODULE: '{{.ITEM}}'
+          MVN_ARGS: '-B clean'
+
+  test:
+    desc: Run tests in every Maven module
+    cmds:
+      - for: { var: MODULES }
+        task: _mvn
+        vars:
+          MODULE: '{{.ITEM}}'
+          MVN_ARGS: '-B test'
+
+  _mvn:
+    internal: true
+    dir: '{{.MODULE}}'
+    cmds:
+      - echo "==> Building {{.MODULE}}"
+      - mvn {{.MVN_ARGS}}
