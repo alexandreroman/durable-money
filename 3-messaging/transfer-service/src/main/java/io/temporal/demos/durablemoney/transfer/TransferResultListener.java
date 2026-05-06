@@ -25,40 +25,38 @@ class TransferResultListener {
         var transfer = transferRepository.findById(result.transferId())
                 .orElseThrow(() -> new TransferNotFoundException(result.transferId()));
 
-        if (transfer.getStatus() == TransferStatus.COMPLETED || transfer.getStatus() == TransferStatus.FAILED) {
+        if (transfer.status() == TransferStatus.COMPLETED || transfer.status() == TransferStatus.FAILED) {
             LOGGER.info("Ignoring result for transfer {} already in terminal state {}",
-                    result.transferId(), transfer.getStatus());
+                    result.transferId(), transfer.status());
             return;
         }
 
         switch (result.type()) {
             case DEBIT -> {
                 if (result.success()) {
-                    transfer.setStatus(TransferStatus.CREDITING);
-                    transferRepository.save(transfer);
+                    transferRepository.markCrediting(result.transferId());
                     var creditCmd = new AccountCommandMessage(
-                        result.transferId(), transfer.getTargetAccountId(), transfer.getAmount(), CommandType.CREDIT);
+                            result.transferId(), transfer.targetAccountId(), transfer.amount(),
+                            CommandType.CREDIT);
                     rabbitTemplate.convertAndSend("money.exchange", "account.commands", creditCmd);
                     LOGGER.info("Debit succeeded, sending credit for transfer {}", result.transferId());
                 } else {
-                    transfer.setStatus(TransferStatus.FAILED);
-                    transfer.setErrorMessage(result.errorMessage());
-                    transferRepository.save(transfer);
-                    LOGGER.warn("Debit failed for transfer {}: {}", result.transferId(), result.errorMessage());
+                    transferRepository.markFailed(result.transferId(), result.errorMessage());
+                    LOGGER.warn("Debit failed for transfer {}: {}",
+                            result.transferId(), result.errorMessage());
                 }
             }
             case CREDIT -> {
                 if (result.success()) {
-                    transfer.setStatus(TransferStatus.COMPLETED);
+                    transferRepository.markCompleted(result.transferId());
                     LOGGER.info("Transfer {} completed successfully", result.transferId());
                 } else {
                     // ⚠️ Credit failed but debit already succeeded — money is lost without compensation.
-                    // Messages that cannot be processed are sent to the DLQ for manual replay or investigation.
-                    transfer.setStatus(TransferStatus.FAILED);
-                    transfer.setErrorMessage(result.errorMessage());
-                    LOGGER.error("Credit failed for transfer {} — inconsistent state: {}", result.transferId(), result.errorMessage());
+                    // Messages that cannot be processed are sent to the DLQ for manual replay.
+                    transferRepository.markFailed(result.transferId(), result.errorMessage());
+                    LOGGER.error("Credit failed for transfer {} — inconsistent state: {}",
+                            result.transferId(), result.errorMessage());
                 }
-                transferRepository.save(transfer);
             }
         }
     }

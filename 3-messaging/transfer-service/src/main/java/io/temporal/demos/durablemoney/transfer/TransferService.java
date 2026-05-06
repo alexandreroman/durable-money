@@ -19,16 +19,9 @@ class TransferService {
 
     @Transactional
     Transfer initiateTransfer(UUID sourceAccountId, UUID targetAccountId, BigDecimal amount) {
-        var transfer = new Transfer();
-        transfer.setSourceAccountId(sourceAccountId);
-        transfer.setTargetAccountId(targetAccountId);
-        transfer.setAmount(amount);
-        transfer.setStatus(TransferStatus.DEBITING);
-        transfer = transferRepository.save(transfer);
-
-        var cmd = new AccountCommandMessage(transfer.getId(), sourceAccountId, amount, CommandType.DEBIT);
+        var transfer = transferRepository.insertDebiting(sourceAccountId, targetAccountId, amount);
+        var cmd = new AccountCommandMessage(transfer.id(), sourceAccountId, amount, CommandType.DEBIT);
         rabbitTemplate.convertAndSend("money.exchange", "account.commands", cmd);
-
         return transfer;
     }
 

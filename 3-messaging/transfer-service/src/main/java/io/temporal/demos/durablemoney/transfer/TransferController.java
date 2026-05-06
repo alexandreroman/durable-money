@@ -55,7 +55,7 @@ class TransferController {
     record TransferView(UUID id, String status, String message, Instant createdAt, Instant updatedAt) {
         static TransferView from(Transfer t) {
             return new TransferView(
-                    t.getId(), t.getStatus().name(), t.getErrorMessage(), t.getCreatedAt(), t.getUpdatedAt());
+                    t.id(), t.status().name(), t.errorMessage(), t.createdAt(), t.updatedAt());
         }
     }
 }
