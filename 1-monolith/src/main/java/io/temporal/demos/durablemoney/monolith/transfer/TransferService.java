@@ -25,12 +25,7 @@ class TransferService {
         // (REST, messaging, Temporal Saga) because they no longer share one database transaction.
         accountService.debit(sourceAccountId, amount);
         accountService.credit(targetAccountId, amount);
-
-        var transfer = new Transfer();
-        transfer.setSourceAccountId(sourceAccountId);
-        transfer.setTargetAccountId(targetAccountId);
-        transfer.setAmount(amount);
-        return transferRepository.save(transfer);
+        return transferRepository.insert(sourceAccountId, targetAccountId, amount);
     }
 
     @Transactional(readOnly = true)

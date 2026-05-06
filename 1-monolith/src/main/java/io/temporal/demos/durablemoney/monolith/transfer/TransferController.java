@@ -78,8 +78,8 @@ class TransferController {
     ) {
         static TransferView from(Transfer t) {
             return new TransferView(
-                    t.getId(), t.getSourceAccountId(), t.getTargetAccountId(),
-                    t.getAmount(), t.getCreatedAt(), t.getCompletedAt());
+                    t.id(), t.sourceAccountId(), t.targetAccountId(),
+                    t.amount(), t.createdAt(), t.completedAt());
         }
     }
 }

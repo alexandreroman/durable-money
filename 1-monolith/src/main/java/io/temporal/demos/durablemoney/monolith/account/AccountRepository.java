@@ -1,15 +1,44 @@
 package io.temporal.demos.durablemoney.monolith.account;
 
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-interface AccountRepository extends JpaRepository<Account, UUID> {
+@Repository
+class AccountRepository {
+    private final JdbcClient jdbcClient;
+
+    AccountRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
+    }
+
+    Account insert(String owner, BigDecimal balance) {
+        var account = new Account(UUID.randomUUID(), owner, balance, Instant.now());
+        jdbcClient.sql("INSERT INTO accounts (id, owner, balance, created_at) VALUES (?, ?, ?, ?)")
+                .params(account.id(), account.owner(), account.balance(), account.createdAt().atOffset(ZoneOffset.UTC))
+                .update();
+        return account;
+    }
+
+    Optional<Account> findById(UUID id) {
+        return jdbcClient.sql("SELECT id, owner, balance, created_at FROM accounts WHERE id = ?")
+                .param(id)
+                .query(Account.class)
+                .optional();
+    }
+
+    List<Account> findAllOrderByOwner() {
+        return jdbcClient.sql("SELECT id, owner, balance, created_at FROM accounts ORDER BY owner")
+                .query(Account.class)
+                .list();
+    }
+
     /**
      * Loads an account with a row-level write lock ({@code SELECT ... FOR UPDATE}).
      *
@@ -17,12 +46,17 @@ interface AccountRepository extends JpaRepository<Account, UUID> {
      * READ COMMITTED isolation, two transactions can both read {@code balance=100}, both pass the
      * "sufficient funds" check, and both write {@code balance=0} — silently losing money or
      * producing a negative balance. The pessimistic lock serializes access to the row.
-     *
-     * <p>Alternatives considered: optimistic locking via {@code @Version} (retry on conflict), or a
-     * single atomic {@code UPDATE ... SET balance = balance - ? WHERE balance >= ?}. Pessimistic
-     * locking was chosen here for clarity — this module exists to showcase the ACID baseline.
      */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM Account a WHERE a.id = :id")
-    Optional<Account> findByIdWithLock(@Param("id") UUID id);
+    Optional<Account> findByIdForUpdate(UUID id) {
+        return jdbcClient.sql("SELECT id, owner, balance, created_at FROM accounts WHERE id = ? FOR UPDATE")
+                .param(id)
+                .query(Account.class)
+                .optional();
+    }
+
+    void updateBalance(UUID id, BigDecimal balance) {
+        jdbcClient.sql("UPDATE accounts SET balance = ? WHERE id = ?")
+                .params(balance, id)
+                .update();
+    }
 }
