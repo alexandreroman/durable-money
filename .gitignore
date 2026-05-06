@@ -51,3 +51,7 @@ logs/
 # Local environment
 .env
 .env.local
+
+# Claude Code
+.claude/agent-memory/
+.claude/worktrees/
