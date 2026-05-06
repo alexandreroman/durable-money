@@ -19,7 +19,7 @@ management:
   server:
     port: ${MANAGEMENT_PORT:9081}
 server:
-  port: ${PORT:8081}
+  port: ${PORT:9080}
 logging:
   structured:
     format:

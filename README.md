@@ -128,7 +128,7 @@ both roll back automatically.
 ```mermaid
 graph TD
     Client --> Transfer[transfer-service :8080]
-    Transfer -->|POST /debit| Account[account-service :8081]
+    Transfer -->|POST /debit| Account[account-service :9080]
     Transfer -->|POST /credit| Account
     Account --> DB[(PostgreSQL)]
 ```
@@ -144,7 +144,7 @@ back the debit.
 graph TD
     Client --> Transfer[transfer-service :8080]
     Transfer -->|DebitCommand| MQ[RabbitMQ]
-    MQ --> Account[account-service :8081]
+    MQ --> Account[account-service :9080]
     Account -->|AccountResult| MQ
     MQ --> Transfer
     MQ -->|on failure| DLQ[(DLQ)]
@@ -161,7 +161,7 @@ compensation if it fails after a successful debit.
 graph TD
     Client --> Workflow[workflow :8080]
     Workflow -->|start| Temporal[Temporal Server :7233]
-    Temporal -->|debitAccount| Account[account-service :8081]
+    Temporal -->|debitAccount| Account[account-service :9080]
     Temporal -->|creditAccount| Account
     Temporal -->|reverseDebit on failure| Account
     UI[Temporal UI :8233] --> Temporal
@@ -183,7 +183,7 @@ variables with sensible defaults for local development.
 | `DB_HOST`             | PostgreSQL hostname               | `localhost`          |
 | `DB_USER`             | PostgreSQL username               | `demo`               |
 | `DB_PASS`             | PostgreSQL password               | `demo`               |
-| `ACCOUNT_SERVICE_URL` | Account service base URL (2, 4)   | `http://localhost:8081` |
+| `ACCOUNT_SERVICE_URL` | Account service base URL (2, 4)   | `http://localhost:9080` |
 | `RABBITMQ_HOST`       | RabbitMQ hostname (3)             | `localhost`          |
 | `TEMPORAL_HOST`       | Temporal Server hostname (4)      | `localhost`          |
 

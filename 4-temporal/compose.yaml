@@ -29,8 +29,6 @@ services:
 
   account-service:
     build: ./account-service
-    ports:
-      - "8081:8081"
     environment:
       DB_HOST: postgres
       DB_USER: demo
@@ -50,7 +48,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      ACCOUNT_SERVICE_URL: http://account-service:8081
+      ACCOUNT_SERVICE_URL: http://account-service:9080
       TEMPORAL_ADDRESS: temporal:7233
     depends_on:
       account-service:
