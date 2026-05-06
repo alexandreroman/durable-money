@@ -1,6 +1,5 @@
 package io.temporal.demos.durablemoney.account;
 
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +25,7 @@ class AccountService {
     @Transactional
     void debit(UUID id, BigDecimal amount) {
         var account = accountRepository.findByIdWithLock(id)
-                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new AccountNotFoundException(id));
         if (account.getBalance().compareTo(amount) < 0) {
             throw new InsufficientFundsException("Insufficient funds in account " + id);
         }
@@ -36,7 +35,7 @@ class AccountService {
     @Transactional
     void credit(UUID id, BigDecimal amount) {
         var account = accountRepository.findByIdWithLock(id)
-                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new AccountNotFoundException(id));
         account.setBalance(account.getBalance().add(amount));
     }
 
