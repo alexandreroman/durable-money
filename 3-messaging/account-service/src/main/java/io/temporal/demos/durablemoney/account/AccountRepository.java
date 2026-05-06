@@ -1,23 +1,55 @@
 package io.temporal.demos.durablemoney.account;
 
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
-interface AccountRepository extends JpaRepository<Account, UUID> {
+@Repository
+class AccountRepository {
+    private final JdbcClient jdbcClient;
+
+    AccountRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
+    }
+
+    Account insert(String owner, BigDecimal balance) {
+        var account = new Account(UUID.randomUUID(), owner, balance, Instant.now());
+        jdbcClient.sql("INSERT INTO accounts (id, owner, balance, created_at) VALUES (?, ?, ?, ?)")
+                .params(account.id(), account.owner(), account.balance(), account.createdAt().atOffset(ZoneOffset.UTC))
+                .update();
+        return account;
+    }
+
+    Optional<Account> findById(UUID id) {
+        return jdbcClient.sql("SELECT id, owner, balance, created_at FROM accounts WHERE id = ?")
+                .param(id)
+                .query(Account.class)
+                .optional();
+    }
+
     /**
      * Loads an account with a row-level write lock ({@code SELECT ... FOR UPDATE}).
      *
-     * <p>The RabbitMQ listener container processes account commands concurrently across its
-     * thread pool, so two debits or credits against the same account can race. The pessimistic
-     * lock serializes per-account updates and prevents lost balance writes.
+     * <p>Required to prevent lost updates on concurrent debits/credits: under PostgreSQL's default
+     * READ COMMITTED isolation, two transactions can both read {@code balance=100}, both pass the
+     * "sufficient funds" check, and both write {@code balance=0} — silently losing money or
+     * producing a negative balance. The pessimistic lock serializes access to the row.
      */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM Account a WHERE a.id = :id")
-    Optional<Account> findByIdWithLock(@Param("id") UUID id);
+    Optional<Account> findByIdForUpdate(UUID id) {
+        return jdbcClient.sql("SELECT id, owner, balance, created_at FROM accounts WHERE id = ? FOR UPDATE")
+                .param(id)
+                .query(Account.class)
+                .optional();
+    }
+
+    void updateBalance(UUID id, BigDecimal balance) {
+        jdbcClient.sql("UPDATE accounts SET balance = ? WHERE id = ?")
+                .params(balance, id)
+                .update();
+    }
 }
