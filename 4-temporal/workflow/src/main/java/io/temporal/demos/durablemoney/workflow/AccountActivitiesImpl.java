@@ -9,7 +9,6 @@ import java.util.UUID;
 
 @ActivityImpl(workers = "transfer")
 class AccountActivitiesImpl implements AccountActivities {
-
     private final RestClient restClient;
 
     AccountActivitiesImpl(@Value("${account.service.url}") String baseUrl,

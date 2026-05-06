@@ -11,17 +11,16 @@ import java.time.Duration;
 
 @WorkflowImpl(workers = "transfer")
 class TransferWorkflowImpl implements TransferWorkflow {
+    private final AccountActivities activities = Workflow.newActivityStub(AccountActivities.class,
+            ActivityOptions.newBuilder()
+                    .setStartToCloseTimeout(Duration.ofSeconds(30))
+                    .setRetryOptions(RetryOptions.newBuilder()
+                            .setMaximumAttempts(3)
+                            .build())
+                    .build());
 
     @Override
     public TransferResult execute(TransferInput input) {
-        var options = ActivityOptions.newBuilder()
-            .setStartToCloseTimeout(Duration.ofSeconds(30))
-            .setRetryOptions(RetryOptions.newBuilder()
-                .setMaximumAttempts(3)
-                .build())
-            .build();
-        var activities = Workflow.newActivityStub(AccountActivities.class, options);
-
         // Temporal automatically persists workflow state and retries failed activities.
         // If this process crashes mid-execution, Temporal replays the workflow from its
         // event history — no completed activity is re-executed.
@@ -30,7 +29,7 @@ class TransferWorkflowImpl implements TransferWorkflow {
             // Register compensation BEFORE the activity it guards.
             // If creditAccount fails, saga.compensate() reverses the debit.
             saga.addCompensation(activities::reverseDebit,
-                input.sourceAccountId(), input.amount(), input.transferId());
+                    input.sourceAccountId(), input.amount(), input.transferId());
             activities.debitAccount(input.sourceAccountId(), input.amount(), input.transferId());
 
             activities.creditAccount(input.targetAccountId(), input.amount(), input.transferId());
