@@ -52,7 +52,7 @@ class TransferController {
                 "status", desc.getStatus().toString()
             );
         } catch (io.temporal.client.WorkflowNotFoundException e) {
-            throw new WorkflowNotFoundException("Workflow not found: " + workflowId);
+            throw new WorkflowNotFoundException(workflowId);
         }
     }
 

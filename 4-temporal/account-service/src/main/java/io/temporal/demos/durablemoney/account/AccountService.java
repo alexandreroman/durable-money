@@ -1,6 +1,5 @@
 package io.temporal.demos.durablemoney.account;
 
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +25,7 @@ class AccountService {
     @Transactional(readOnly = true)
     Account getAccount(UUID id) {
         return accountRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new AccountNotFoundException(id));
     }
 
     @Transactional
@@ -35,7 +34,7 @@ class AccountService {
         // the account row. JPA dirty checking flushes the balance update at commit, so no explicit
         // save() is needed. Throwing from inside @Transactional triggers an automatic rollback.
         var account = accountRepository.findByIdWithLock(id)
-                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new AccountNotFoundException(id));
         if (account.getBalance().compareTo(amount) < 0) {
             throw new InsufficientFundsException("Insufficient funds in account " + id);
         }
@@ -47,7 +46,7 @@ class AccountService {
     Account credit(UUID id, BigDecimal amount) {
         // Pessimistic lock kept symmetric with debit() to serialize concurrent updates on the row.
         var account = accountRepository.findByIdWithLock(id)
-                .orElseThrow(() -> new EntityNotFoundException("Account not found: " + id));
+                .orElseThrow(() -> new AccountNotFoundException(id));
         account.setBalance(account.getBalance().add(amount));
         return account;
     }

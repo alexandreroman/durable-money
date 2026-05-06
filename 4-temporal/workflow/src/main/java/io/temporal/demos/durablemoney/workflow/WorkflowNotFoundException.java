@@ -1,7 +1,7 @@
 package io.temporal.demos.durablemoney.workflow;
 
 class WorkflowNotFoundException extends RuntimeException {
-    WorkflowNotFoundException(String message) {
-        super(message);
+    WorkflowNotFoundException(String workflowId) {
+        super("Workflow not found: " + workflowId);
     }
 }

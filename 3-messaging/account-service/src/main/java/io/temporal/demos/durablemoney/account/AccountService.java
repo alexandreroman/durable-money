@@ -38,10 +38,4 @@ class AccountService {
                 .orElseThrow(() -> new AccountNotFoundException(id));
         account.setBalance(account.getBalance().add(amount));
     }
-
-    static class InsufficientFundsException extends RuntimeException {
-        InsufficientFundsException(String message) {
-            super(message);
-        }
-    }
 }

@@ -1,4 +1,4 @@
-package io.temporal.demos.durablemoney.monolith.transfer;
+package io.temporal.demos.durablemoney.transfer;
 
 import java.util.UUID;
 

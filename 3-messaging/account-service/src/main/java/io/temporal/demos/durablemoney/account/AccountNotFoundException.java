@@ -1,10 +1,8 @@
 package io.temporal.demos.durablemoney.account;
 
-import jakarta.persistence.EntityNotFoundException;
-
 import java.util.UUID;
 
-class AccountNotFoundException extends EntityNotFoundException {
+class AccountNotFoundException extends RuntimeException {
     AccountNotFoundException(UUID id) {
         super("Account not found: " + id);
     }

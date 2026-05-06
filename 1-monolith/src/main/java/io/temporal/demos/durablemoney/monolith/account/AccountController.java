@@ -1,6 +1,5 @@
 package io.temporal.demos.durablemoney.monolith.account;
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -39,8 +38,8 @@ class AccountController {
         return accountService.getAll().stream().map(AccountView::from).toList();
     }
 
-    @ExceptionHandler(EntityNotFoundException.class)
-    ProblemDetail handleNotFound(EntityNotFoundException e) {
+    @ExceptionHandler(AccountNotFoundException.class)
+    ProblemDetail handleNotFound(AccountNotFoundException e) {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
         problem.setTitle("Account not found");
         return problem;

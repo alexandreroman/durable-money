@@ -23,7 +23,7 @@ class TransferResultListener {
     @Transactional
     void handleResult(AccountResultMessage result) {
         var transfer = transferRepository.findById(result.transferId())
-                .orElseThrow(() -> new IllegalStateException("Transfer not found: " + result.transferId()));
+                .orElseThrow(() -> new TransferNotFoundException(result.transferId()));
 
         if (transfer.getStatus() == TransferStatus.COMPLETED || transfer.getStatus() == TransferStatus.FAILED) {
             LOGGER.info("Ignoring result for transfer {} already in terminal state {}",

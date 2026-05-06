@@ -1,6 +1,5 @@
 package io.temporal.demos.durablemoney.transfer;
 
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +35,6 @@ class TransferService {
     @Transactional(readOnly = true)
     Transfer getTransfer(UUID id) {
         return transferRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transfer not found: " + id));
+                .orElseThrow(() -> new TransferNotFoundException(id));
     }
 }

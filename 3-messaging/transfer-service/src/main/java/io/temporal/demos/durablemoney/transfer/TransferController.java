@@ -1,6 +1,5 @@
 package io.temporal.demos.durablemoney.transfer;
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -40,8 +39,8 @@ class TransferController {
         return TransferView.from(transferService.getTransfer(id));
     }
 
-    @ExceptionHandler(EntityNotFoundException.class)
-    ProblemDetail handleNotFound(EntityNotFoundException e) {
+    @ExceptionHandler(TransferNotFoundException.class)
+    ProblemDetail handleNotFound(TransferNotFoundException e) {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
         problem.setTitle("Transfer not found");
         return problem;
