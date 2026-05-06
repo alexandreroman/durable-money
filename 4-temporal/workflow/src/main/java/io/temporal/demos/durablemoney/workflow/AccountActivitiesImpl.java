@@ -2,11 +2,13 @@ package io.temporal.demos.durablemoney.workflow;
 
 import io.temporal.spring.boot.ActivityImpl;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
+@Component
 @ActivityImpl(workers = "transfer")
 class AccountActivitiesImpl implements AccountActivities {
     private final RestClient restClient;

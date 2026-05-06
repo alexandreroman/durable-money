@@ -11,7 +11,7 @@ RUN --mount=type=cache,id=maven,target=/root/.m2 mvn package -DskipTests -q && \
 # Adds java.net.http, java.security.sasl, and jdk.zipfs on top of module 1's list
 # to cover gRPC TLS handshake paths and dynamic jar/zipfs lookups.
 RUN jlink \
-        --add-modules java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.security.jgss,java.security.sasl,java.sql,java.sql.rowset,java.xml,jdk.crypto.ec,jdk.unsupported,jdk.zipfs \
+        --add-modules java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.security.jgss,java.security.sasl,java.sql,java.sql.rowset,java.xml,jdk.crypto.ec,jdk.management,jdk.unsupported,jdk.zipfs \
         --strip-debug \
         --no-man-pages \
         --no-header-files \
