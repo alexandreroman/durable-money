@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 class TransferResultListener {
-    private static final Logger log = LoggerFactory.getLogger(TransferResultListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TransferResultListener.class);
 
     private final TransferRepository transferRepository;
     private final RabbitTemplate rabbitTemplate;
@@ -26,7 +26,7 @@ class TransferResultListener {
                 .orElseThrow(() -> new IllegalStateException("Transfer not found: " + result.transferId()));
 
         if (transfer.getStatus() == TransferStatus.COMPLETED || transfer.getStatus() == TransferStatus.FAILED) {
-            log.info("Ignoring result for transfer {} already in terminal state {}",
+            LOGGER.info("Ignoring result for transfer {} already in terminal state {}",
                     result.transferId(), transfer.getStatus());
             return;
         }
@@ -39,24 +39,24 @@ class TransferResultListener {
                     var creditCmd = new AccountCommandMessage(
                         result.transferId(), transfer.getTargetAccountId(), transfer.getAmount(), CommandType.CREDIT);
                     rabbitTemplate.convertAndSend("money.exchange", "account.commands", creditCmd);
-                    log.info("Debit succeeded, sending credit for transfer {}", result.transferId());
+                    LOGGER.info("Debit succeeded, sending credit for transfer {}", result.transferId());
                 } else {
                     transfer.setStatus(TransferStatus.FAILED);
                     transfer.setErrorMessage(result.errorMessage());
                     transferRepository.save(transfer);
-                    log.warn("Debit failed for transfer {}: {}", result.transferId(), result.errorMessage());
+                    LOGGER.warn("Debit failed for transfer {}: {}", result.transferId(), result.errorMessage());
                 }
             }
             case CREDIT -> {
                 if (result.success()) {
                     transfer.setStatus(TransferStatus.COMPLETED);
-                    log.info("Transfer {} completed successfully", result.transferId());
+                    LOGGER.info("Transfer {} completed successfully", result.transferId());
                 } else {
                     // ⚠️ Credit failed but debit already succeeded — money is lost without compensation.
                     // Messages that cannot be processed are sent to the DLQ for manual replay or investigation.
                     transfer.setStatus(TransferStatus.FAILED);
                     transfer.setErrorMessage(result.errorMessage());
-                    log.error("Credit failed for transfer {} — inconsistent state: {}", result.transferId(), result.errorMessage());
+                    LOGGER.error("Credit failed for transfer {} — inconsistent state: {}", result.transferId(), result.errorMessage());
                 }
                 transferRepository.save(transfer);
             }
