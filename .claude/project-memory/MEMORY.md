@@ -19,5 +19,5 @@
 - [Keep spring-boot-devtools in every module](references/feedback_keep_devtools.md) — devtools stays as runtime/optional in every pom.xml for local IDE workflows
 - [Keep workflow-packages: io.temporal.demos broad](references/feedback_temporal_workflow_packages_broad.md) — use the wider scan root for Temporal workflow auto-discovery, not a tighter sub-package
 - [Reference nested types by simple name](references/feedback_unqualified_nested_types.md) — import nested records/enums so they read as DebitInput, not AccountActivities.DebitInput; inherited interface members need no import
-- [Migration from JPA/Hibernate to Spring JdbcClient](references/project_jdbc_client_migration.md) — module 1 migrated to JdbcClient + records + schema.sql; modules 2-4 still on JPA, same template to follow
+- [Migration from JPA/Hibernate to Spring JdbcClient](references/project_jdbc_client_migration.md) — all modules migrated to JdbcClient + records + schema.sql as of 2026-05-06
 - [Bind OffsetDateTime, not Instant, with JdbcClient on PostgreSQL](references/feedback_jdbc_instant_binding.md) — pgjdbc cannot infer SQL type for Instant; convert via .atOffset(ZoneOffset.UTC) at bind site, keep domain types as Instant
