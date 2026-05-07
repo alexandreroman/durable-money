@@ -1,6 +1,6 @@
 # durable-money
 
-A hands-on tutorial comparing four approaches to building
+A hands-on tutorial comparing five approaches to building
 resilient money transfer systems — from a classic monolith
 to durable execution with Temporal. Designed for developers
 who want to understand *why* distributed transactions are
@@ -13,8 +13,8 @@ hard and *how* Temporal solves the problem.
 - **Progressive complexity** — each module builds on the
   previous one, introducing a new failure mode and its
   solution.
-- **Same domain, four architectures** — money transfer is
-  implemented identically in all four modules so the
+- **Same domain, five architectures** — money transfer is
+  implemented identically in all five modules so the
   differences are easy to spot.
 - **Runnable with one command** — every module ships with
   a `compose.yaml` that starts all required services.
@@ -64,7 +64,7 @@ The API is available at `http://localhost:8080`.
 
 ### Pre-loaded demo accounts
 
-All four modules ship the same `data.sql` seed, so the
+All five modules ship the same `data.sql` seed, so the
 following two accounts exist on startup in every module
 and the same source/target IDs work everywhere:
 
@@ -155,7 +155,7 @@ fails after the debit succeeds, money disappears from
 the system — there is no distributed transaction to roll
 back the debit.
 
-### Module 3-two-phase-commit — Two-phase commit (PostgreSQL prepared transactions)
+### Module 3 — Two-phase commit (PostgreSQL prepared transactions)
 
 ```mermaid
 graph TD

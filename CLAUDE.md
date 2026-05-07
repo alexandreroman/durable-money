@@ -1,6 +1,6 @@
 # durable-money
 
-Tutorial comparing four architectures for resilient
+Tutorial comparing five architectures for resilient
 money transfer — from ACID monolith to Temporal Saga.
 
 See [README.md](README.md) for full documentation.
