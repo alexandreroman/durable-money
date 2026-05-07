@@ -60,8 +60,8 @@ forwards REST calls to the account service.
 ```mermaid
 graph TD
     Client --> Transfer[transfer-service :8080]
-    Transfer -->|POST /accounts/{id}/debit| Account[account-service :9080]
-    Transfer -->|POST /accounts/{id}/credit| Account
+    Transfer -->|"POST /accounts/{id}/debit"| Account[account-service :9080]
+    Transfer -->|"POST /accounts/{id}/credit"| Account
     Account --> DB[("PostgreSQL :5432<br/>schema: account")]
 ```
 

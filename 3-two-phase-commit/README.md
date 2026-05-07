@@ -81,7 +81,7 @@ graph TD
     Transfer -->|/credit/prepare| Account
     Transfer -->|local INSERT + PREPARE TRANSACTION| DB[(PostgreSQL :5432)]
     Transfer -->|"INSERT transfer_decisions<br/>REQUIRES_NEW"| DB
-    Transfer -->|/xa/{xid}/commit or rollback| Account
+    Transfer -->|"/xa/{xid}/commit or rollback"| Account
     Account --> DB
 ```
 
