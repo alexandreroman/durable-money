@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -37,6 +38,11 @@ class AccountController {
     @GetMapping("/{id}")
     AccountView get(@PathVariable UUID id) {
         return AccountView.from(accountService.getAccount(id));
+    }
+
+    @GetMapping
+    List<AccountView> getAll() {
+        return accountService.getAll().stream().map(AccountView::from).toList();
     }
 
     @PostMapping("/{id}/debit/prepare")

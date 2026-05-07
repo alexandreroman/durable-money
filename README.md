@@ -226,10 +226,10 @@ excluding comments and blank lines.
 | Module               |  LOC | Notes                                      |
 | -------------------- | ---: | ------------------------------------------ |
 | `1-monolith`         |  485 | Atomic via @Transactional; tightly coupled |
-| `2-microservices`    |  558 | Incomplete: money lost if credit fails     |
-| `3-two-phase-commit` |  998 | Atomic but blocking; coordinator is a SPOF |
-| `4-messaging`        |  837 | Async with DLQ, but no auto-compensation   |
-| `5-temporal`         |  767 | Auto-compensation via Saga; no money lost  |
+| `2-microservices`    |  574 | Incomplete: money lost if credit fails     |
+| `3-two-phase-commit` | 1014 | Atomic but blocking; coordinator is a SPOF |
+| `4-messaging`        |  872 | Async with DLQ, but no auto-compensation   |
+| `5-temporal`         |  783 | Auto-compensation via Saga; no money lost  |
 
 A few takeaways:
 

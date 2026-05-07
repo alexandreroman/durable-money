@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,5 +32,11 @@ class AccountRepository {
                 .param(id)
                 .query(Account.class)
                 .optional();
+    }
+
+    List<Account> findAllOrderByOwner() {
+        return jdbcClient.sql("SELECT id, owner, balance, created_at FROM accounts ORDER BY owner")
+                .query(Account.class)
+                .list();
     }
 }

@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -32,6 +33,17 @@ class AccountService {
     @Transactional
     Account createAccount(String owner, BigDecimal initialBalance) {
         return accountRepository.insert(owner, initialBalance);
+    }
+
+    @Transactional(readOnly = true)
+    Account getAccount(UUID id) {
+        return accountRepository.findById(id)
+                .orElseThrow(() -> new AccountNotFoundException(id));
+    }
+
+    @Transactional(readOnly = true)
+    List<Account> getAll() {
+        return accountRepository.findAllOrderByOwner();
     }
 
     @Transactional

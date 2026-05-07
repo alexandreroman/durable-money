@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -52,6 +53,11 @@ class AccountService {
     Account getAccount(UUID id) {
         return accountRepository.findById(id)
                 .orElseThrow(() -> new AccountNotFoundException(id));
+    }
+
+    @Transactional(readOnly = true)
+    List<Account> getAll() {
+        return accountRepository.findAllOrderByOwner();
     }
 
     void prepareDebit(UUID accountId, BigDecimal amount, String xid) {

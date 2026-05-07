@@ -5,6 +5,10 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +33,23 @@ class AccountController {
     @ResponseStatus(HttpStatus.CREATED)
     AccountView create(@RequestBody @Valid NewAccount request) {
         return AccountView.from(accountService.createAccount(request.owner(), request.initialBalance()));
+    }
+
+    @GetMapping("/{id}")
+    AccountView get(@PathVariable UUID id) {
+        return AccountView.from(accountService.getAccount(id));
+    }
+
+    @GetMapping
+    List<AccountView> getAll() {
+        return accountService.getAll().stream().map(AccountView::from).toList();
+    }
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    ProblemDetail handleNotFound(AccountNotFoundException e) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+        problem.setTitle("Account not found");
+        return problem;
     }
 
     record NewAccount(
