@@ -214,6 +214,37 @@ after the debit succeeds, the Saga compensates by
 reversing the debit — no money is ever lost, even if
 the workflow service crashes mid-execution.
 
+## Lines of code
+
+The same money-transfer use case is implemented in every
+module, so the size of each codebase is a fair proxy for
+its underlying complexity. The numbers below count Java
+sources and configuration files (`pom.xml`, `compose.yaml`,
+`application.yaml`, `schema.sql`, `Dockerfile`, etc.),
+excluding comments and blank lines.
+
+| Module               |  LOC | Notes                                      |
+| -------------------- | ---: | ------------------------------------------ |
+| `1-monolith`         |  485 | Atomic via @Transactional; tightly coupled |
+| `2-microservices`    |  558 | Incomplete: money lost if credit fails     |
+| `3-two-phase-commit` |  998 | Atomic but blocking; coordinator is a SPOF |
+| `4-messaging`        |  837 | Async with DLQ, but no auto-compensation   |
+| `5-temporal`         |  767 | Auto-compensation via Saga; no money lost  |
+
+A few takeaways:
+
+- The monolith is the baseline — one service, one database,
+  one `@Transactional` boundary.
+- Module 3 is roughly 2× the monolith: hand-rolling 2PC over
+  PostgreSQL prepared transactions has a real cost in
+  coordinator and journaling code.
+- Module 4 needs more files than module 3 (handlers per
+  message type) but stays smaller in lines, because
+  asynchronous messaging avoids the coordinator state machine.
+- Module 5 returns to a moderate size: the durable execution
+  and Saga compensation logic is carried by the Temporal SDK,
+  not by application code.
+
 ## Configuration
 
 Each module reads its configuration from environment
