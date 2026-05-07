@@ -36,11 +36,14 @@ class TransferWorkflowImpl implements TransferWorkflow {
             var reverseDebitInput = new ReverseDebitInput(
                     input.sourceAccountId(), input.amount(), input.transferId());
 
-            // Register compensation BEFORE the activity it guards.
-            // If creditAccount fails, saga.compensate() reverses the debit.
-            saga.addCompensation(activities::reverseDebit, reverseDebitInput);
+            // Debit first; only register a compensation for it once it has actually completed.
+            // If debit fails, there is nothing to compensate. Temporal's workflow event history
+            // makes this safe across crashes: on replay the workflow deterministically re-runs
+            // the same activities and registrations from its history.
             activities.debitAccount(debitInput);
+            saga.addCompensation(activities::reverseDebit, reverseDebitInput);
 
+            // If creditAccount fails, saga.compensate() will run reverseDebit to undo the debit.
             activities.creditAccount(creditInput);
 
             return new Result(input.transferId(), "COMPLETED", null);

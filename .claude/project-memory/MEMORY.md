@@ -21,3 +21,4 @@
 - [Reference nested types by simple name](references/feedback_unqualified_nested_types.md) — import nested records/enums so they read as DebitInput, not AccountActivities.DebitInput; inherited interface members need no import
 - [Migration from JPA/Hibernate to Spring JdbcClient](references/project_jdbc_client_migration.md) — all modules migrated to JdbcClient + records + schema.sql as of 2026-05-06
 - [Bind OffsetDateTime, not Instant, with JdbcClient on PostgreSQL](references/feedback_jdbc_instant_binding.md) — pgjdbc cannot infer SQL type for Instant; convert via .atOffset(ZoneOffset.UTC) at bind site, keep domain types as Instant
+- [Register Saga compensations AFTER the activity completes](references/feedback_saga_register_after_activity.md) — Temporal: pre-registering reverseDebit caused a failed 5000 transfer to credit the source 800→5800
