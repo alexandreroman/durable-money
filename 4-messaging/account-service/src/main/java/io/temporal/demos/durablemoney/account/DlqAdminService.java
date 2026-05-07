@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@Transactional
 class DlqAdminService {
     private static final Logger LOGGER = LoggerFactory.getLogger(DlqAdminService.class);
 
@@ -52,6 +51,8 @@ class DlqAdminService {
         props.setContentType(dlq.contentType() != null ? dlq.contentType() : MessageProperties.CONTENT_TYPE_JSON);
         props.setContentEncoding(StandardCharsets.UTF_8.name());
         var message = new Message(dlq.payload().getBytes(StandardCharsets.UTF_8), props);
+        // Publish-then-update: a successful publish followed by a failed DB update leaves the row PARKED, so the
+        // operator simply retries; consumer-side idempotency on (transfer_id, operation) prevents double effects.
         rabbitTemplate.send(dlq.originalExchange(), dlq.originalRoutingKey(), message);
 
         var now = Instant.now();

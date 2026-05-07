@@ -268,6 +268,16 @@ curl -s -X DELETE http://localhost:9080/admin/dlq/<id> | jq .
   table. Without that guard, every replay would
   re-debit or re-credit. Module 5 reuses the same
   idempotency contract for Temporal activities.
+- **Replaying a permanently-broken payload loops.** If
+  a parked message fails for a reason that does not
+  go away (malformed JSON, wrong shape), each replay
+  fails the listener, dead-letters again, and shows up
+  as a fresh `PARKED` row with a new id. Operators must
+  recognise this and `DELETE` instead of replaying.
+- **No authentication on `/admin/dlq`.** The endpoints
+  are bound to the same port as the public API. A real
+  deployment would put them behind an auth filter or on
+  the management port.
 - **Dual-write window.** The transfer-service updates the
   `transfers` table *and* publishes a Rabbit message in
   separate operations. A crash in between can leave the

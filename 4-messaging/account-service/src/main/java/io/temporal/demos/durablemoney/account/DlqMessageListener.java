@@ -1,12 +1,12 @@
 package io.temporal.demos.durablemoney.account;
 
 import io.temporal.demos.durablemoney.account.DlqMessage.Status;
-import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -28,6 +28,7 @@ class DlqMessageListener {
 
     @RabbitListener(queues = "account.commands.dlq")
     void onDlqMessage(Message msg) {
+        var id = UUID.randomUUID();
         var props = msg.getMessageProperties();
         var payload = new String(msg.getBody(), StandardCharsets.UTF_8);
         var contentType = props.getContentType();
@@ -52,6 +53,9 @@ class DlqMessageListener {
             if (routingKeys != null && !routingKeys.isEmpty()) {
                 originalRoutingKey = routingKeys.getFirst();
             }
+        } else {
+            LOGGER.warn("DLQ message {} has no x-death header; original exchange/routing key unknown",
+                    id);
         }
 
         UUID transferId = null;
@@ -60,11 +64,10 @@ class DlqMessageListener {
             if (!node.isMissingNode() && !node.isNull()) {
                 transferId = UUID.fromString(node.asString());
             }
-        } catch (Exception ignored) {
-            // Best-effort: payload may not be JSON or may not contain transferId.
+        } catch (Exception e) {
+            LOGGER.debug("Could not extract transferId from DLQ payload", e);
         }
 
-        var id = UUID.randomUUID();
         var now = Instant.now();
         var dlq = new DlqMessage(id, transferId, originalExchange, originalRoutingKey,
                 failureReason, failureCount, payload, contentType, Status.PARKED, now, now);
