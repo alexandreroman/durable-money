@@ -76,11 +76,11 @@ is durable can resume in a known-good state.
 
 ```mermaid
 graph TD
-    Client --> Transfer[transfer-service :8080<br/>coordinator]
-    Transfer -->|/debit/prepare| Account[account-service :9080<br/>participant]
+    Client --> Transfer["transfer-service :8080<br/>coordinator"]
+    Transfer -->|/debit/prepare| Account["account-service :9080<br/>participant"]
     Transfer -->|/credit/prepare| Account
     Transfer -->|local INSERT + PREPARE TRANSACTION| DB[(PostgreSQL :5432)]
-    Transfer -->|INSERT transfer_decisions<br/>REQUIRES_NEW| DB
+    Transfer -->|"INSERT transfer_decisions<br/>REQUIRES_NEW"| DB
     Transfer -->|/xa/{xid}/commit or rollback| Account
     Account --> DB
 ```

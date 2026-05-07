@@ -62,7 +62,7 @@ graph TD
     Client --> Transfer[transfer-service :8080]
     Transfer -->|POST /accounts/{id}/debit| Account[account-service :9080]
     Transfer -->|POST /accounts/{id}/credit| Account
-    Account --> DB[(PostgreSQL :5432<br/>schema: account)]
+    Account --> DB[("PostgreSQL :5432<br/>schema: account")]
 ```
 
 `TransferService.executeTransfer` is **not**

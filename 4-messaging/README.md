@@ -82,12 +82,12 @@ The `transfers` table tracks state with a four-value
 ```mermaid
 graph TD
     Client --> Transfer[transfer-service :8080]
-    Transfer -->|persist DEBITING<br/>publish DebitCommand| MQ[RabbitMQ :5672<br/>money.exchange]
+    Transfer -->|"persist DEBITING<br/>publish DebitCommand"| MQ["RabbitMQ :5672<br/>money.exchange"]
     MQ -->|account.commands| Account[account-service :9080]
-    Account -->|AccountResult<br/>transfer.results| MQ
+    Account -->|"AccountResult<br/>transfer.results"| MQ
     MQ --> Transfer
-    Transfer -->|persist CREDITING<br/>publish CreditCommand| MQ
-    MQ -.->|message rejected| DLX[money.dlx<br/>account.commands.dlq<br/>transfer.results.dlq]
+    Transfer -->|"persist CREDITING<br/>publish CreditCommand"| MQ
+    MQ -.->|message rejected| DLX["money.dlx<br/>account.commands.dlq<br/>transfer.results.dlq"]
 ```
 
 Per-transfer flow:

@@ -77,12 +77,12 @@ short-circuits without applying the update again.
 
 ```mermaid
 graph TD
-    Client --> Workflow[workflow :8080<br/>WorkflowClient + worker]
+    Client --> Workflow["workflow :8080<br/>WorkflowClient + worker"]
     Workflow -->|start workflow| Temporal[Temporal Server :7233]
     Temporal -->|debitAccount| Account[account-service :9080]
     Temporal -->|creditAccount| Account
     Temporal -->|reverseDebit on failure| Account
-    Account --> DB[(PostgreSQL :5432<br/>accounts + idempotency slots)]
+    Account --> DB[("PostgreSQL :5432<br/>accounts + idempotency slots")]
     UI[Temporal Web UI :8233] --> Temporal
 ```
 

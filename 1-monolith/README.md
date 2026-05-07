@@ -50,7 +50,7 @@ the transfer API on port `8080`. PostgreSQL listens on
 ```mermaid
 graph TD
     Client --> App[Boot app :8080]
-    App -->|@Transactional<br/>debit + credit + journal| DB[(PostgreSQL :5432)]
+    App -->|"@Transactional<br/>debit + credit + journal"| DB[(PostgreSQL :5432)]
 ```
 
 `TransferService.executeTransfer` is annotated
