@@ -34,13 +34,13 @@ Each module is fully independent — no shared code, no
 parent POM. Navigate into any numbered directory and run
 `docker compose up --build` to start it.
 
-| Module                | Approach                   | Key concept                             |
-| --------------------- | -------------------------- | --------------------------------------- |
-| `1-monolith`          | Monolith + ACID            | Single `@Transactional` covers everything |
-| `2-microservices`     | REST microservices         | Distributed calls without a safety net  |
-| `3-two-phase-commit`  | 2PC + Postgres prepared tx | Hand-rolled 2-phase commit, no JTA      |
-| `4-messaging`         | RabbitMQ + DLQ             | Async resilience, still no compensation |
-| `5-temporal`          | Temporal + Saga            | Durable execution with auto-compensation|
+| Module               | Approach                   | Key concept                               |
+| -------------------- | -------------------------- | ----------------------------------------- |
+| `1-monolith`         | Monolith + ACID            | Single `@Transactional` covers everything |
+| `2-microservices`    | REST microservices         | Distributed calls without a safety net    |
+| `3-two-phase-commit` | 2PC + Postgres prepared tx | Hand-rolled 2-phase commit, no JTA        |
+| `4-messaging`        | RabbitMQ + DLQ             | Async resilience, still no compensation   |
+| `5-temporal`         | Temporal + Saga            | Durable execution with auto-compensation  |
 
 ## Getting Started
 
@@ -112,13 +112,13 @@ module, but the response body and HTTP status evolve as
 the architecture moves from synchronous-atomic to
 asynchronous-durable:
 
-| Module               | Status       | Response body                                              |
-| -------------------- | ------------ | ---------------------------------------------------------- |
-| 1-monolith           | 200 OK       | full Transfer (`id`, accounts, `amount`, `createdAt`, `completedAt`) — synchronous, atomic |
-| 2-microservices      | 200 OK       | `{transferId, status, message}` — synchronous, may leave money lost on failure |
-| 3-two-phase-commit   | 200 OK       | full Transfer (atomic via 2PC) — synchronous, all-or-nothing across services |
-| 4-messaging          | 202 Accepted | `{id, status, message, createdAt, updatedAt}` — async, poll `GET /transfers/{id}` |
-| 5-temporal           | 202 Accepted | `{transferId}` — async via Temporal; observe in the UI or `GET /transfers/{workflowId}` |
+| Module             | Status       | Response body                                                                              |
+| ------------------ | ------------ | ------------------------------------------------------------------------------------------ |
+| 1-monolith         | 200 OK       | full Transfer (`id`, accounts, `amount`, `createdAt`, `completedAt`) — synchronous, atomic |
+| 2-microservices    | 200 OK       | `{transferId, status, message}` — synchronous, may leave money lost on failure             |
+| 3-two-phase-commit | 200 OK       | full Transfer (atomic via 2PC) — synchronous, all-or-nothing across services               |
+| 4-messaging        | 202 Accepted | `{id, status, message, createdAt, updatedAt}` — async, poll `GET /transfers/{id}`          |
+| 5-temporal         | 202 Accepted | `{transferId}` — async via Temporal; observe in the UI or `GET /transfers/{workflowId}`    |
 
 ### Module 5 — Temporal UI
 
@@ -219,14 +219,14 @@ the workflow service crashes mid-execution.
 Each module reads its configuration from environment
 variables with sensible defaults for local development.
 
-| Variable              | Description                       | Default              |
-| --------------------- | --------------------------------- | -------------------- |
-| `DB_HOST`             | PostgreSQL hostname               | `localhost`          |
-| `DB_USER`             | PostgreSQL username               | `demo`               |
-| `DB_PASS`             | PostgreSQL password               | `demo`               |
-| `ACCOUNT_SERVICE_URL` | Account service base URL (2, 3, 5)| `http://localhost:9080` |
-| `RABBITMQ_HOST`       | RabbitMQ hostname (4)             | `localhost`          |
-| `TEMPORAL_ADDRESS`    | Temporal Server address (5)       | `localhost:7233`     |
+| Variable              | Description                        | Default                 |
+| --------------------- | ---------------------------------- | ----------------------- |
+| `DB_HOST`             | PostgreSQL hostname                | `localhost`             |
+| `DB_USER`             | PostgreSQL username                | `demo`                  |
+| `DB_PASS`             | PostgreSQL password                | `demo`                  |
+| `ACCOUNT_SERVICE_URL` | Account service base URL (2, 3, 5) | `http://localhost:9080` |
+| `RABBITMQ_HOST`       | RabbitMQ hostname (4)              | `localhost`             |
+| `TEMPORAL_ADDRESS`    | Temporal Server address (5)        | `localhost:7233`        |
 
 > **Note for module `3-two-phase-commit`:** PostgreSQL must be started with
 > `max_prepared_transactions >= 50` for `PREPARE TRANSACTION`
