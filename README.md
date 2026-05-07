@@ -25,48 +25,52 @@ hard and *how* Temporal solves the problem.
 
 ## Prerequisites
 
-- Docker and Docker Compose
+- Docker and Docker Compose (or Podman + podman-compose)
 - Java 25 and Maven (for local development only)
 
 ## Modules
 
 Each module is fully independent — no shared code, no
-parent POM. Navigate into any numbered directory and run
-`docker compose up --build` to start it.
+parent POM. Pick one, navigate into its directory, and
+run `docker compose up --build`. Each module has its own
+README with architecture, build instructions, API
+reference, and the failure modes it does (or does not)
+handle.
 
-| Module               | Approach                   | Key concept                               |
-| -------------------- | -------------------------- | ----------------------------------------- |
-| `1-monolith`         | Monolith + ACID            | Single `@Transactional` covers everything |
-| `2-microservices`    | REST microservices         | Distributed calls without a safety net    |
-| `3-two-phase-commit` | 2PC + Postgres prepared tx | Hand-rolled 2-phase commit, no JTA        |
-| `4-messaging`        | RabbitMQ + DLQ             | Async resilience, still no compensation   |
-| `5-temporal`         | Temporal + Saga            | Durable execution with auto-compensation  |
+| Module                                       | Approach                   | Key concept                               |
+| -------------------------------------------- | -------------------------- | ----------------------------------------- |
+| [`1-monolith`](1-monolith/README.md)         | Monolith + ACID            | Single `@Transactional` covers everything |
+| [`2-microservices`](2-microservices/README.md) | REST microservices       | Distributed calls without a safety net    |
+| [`3-two-phase-commit`](3-two-phase-commit/README.md) | 2PC + Postgres prepared tx | Hand-rolled 2-phase commit, no JTA |
+| [`4-messaging`](4-messaging/README.md)       | RabbitMQ + DLQ             | Async resilience, still no compensation   |
+| [`5-temporal`](5-temporal/README.md)         | Temporal + Saga            | Durable execution with auto-compensation  |
 
-## Getting Started
+## Getting started
 
-Clone the repo and choose a module to explore:
+Clone the repo and start any module:
 
 ```bash
 git clone <repo-url>
-cd durable-money
-```
-
-Start a module:
-
-```bash
-cd 1-monolith
+cd durable-money/1-monolith
 docker compose up --build
 ```
 
-The API is available at `http://localhost:8080`.
+The transfer API is available at `http://localhost:8080`
+in every module — same request shape, different
+guarantees on the response.
 
-## Usage
+## Common conventions
 
-### Pre-loaded demo accounts
+The five modules share a domain and the bare minimum of
+contracts so that the *only* thing that changes across
+them is the architecture. Anything module-specific lives
+in that module's README.
 
-All five modules ship the same `data.sql` seed, so the
-following two accounts exist on startup in every module
-and the same source/target IDs work everywhere:
+### Seeded accounts
+
+All modules ship the same `data.sql`, so the same two
+accounts exist on startup and the same source/target IDs
+work everywhere:
 
 | Owner | Account ID                             | Initial balance |
 | ----- | -------------------------------------- | --------------- |
@@ -74,7 +78,7 @@ and the same source/target IDs work everywhere:
 | Bob   | `d2ff0ba8-79c4-4ea7-b297-26847d553d63` | 100.00          |
 
 ```bash
-# Transfer 200.00 from Alice to Bob (works on all modules)
+# Transfer 200.00 from Alice to Bob — same body in every module
 curl -s -X POST http://localhost:8080/transfers \
   -H "Content-Type: application/json" \
   -d '{
@@ -84,135 +88,53 @@ curl -s -X POST http://localhost:8080/transfers \
   }' | jq .
 ```
 
-Listing accounts is only exposed by module 1:
+### Transfer response shape across modules
 
-```bash
-# List the seeded accounts (module 1 only)
-curl -s http://localhost:8080/accounts | jq .
-```
-
-### Create your own accounts
-
-```bash
-# Create source account
-curl -s -X POST http://localhost:8080/accounts \
-  -H "Content-Type: application/json" \
-  -d '{"owner": "Carol", "initialBalance": 500.00}' | jq .
-
-# Create target account
-curl -s -X POST http://localhost:8080/accounts \
-  -H "Content-Type: application/json" \
-  -d '{"owner": "Dave", "initialBalance": 50.00}' | jq .
-```
-
-### Transfer responses across modules
-
-The `POST /transfers` request body is identical in every
-module, but the response body and HTTP status evolve as
-the architecture moves from synchronous-atomic to
-asynchronous-durable:
+`POST /transfers` accepts the same body everywhere, but
+the response evolves as the architecture moves from
+synchronous-atomic to asynchronous-durable:
 
 | Module             | Status       | Response body                                                                              |
 | ------------------ | ------------ | ------------------------------------------------------------------------------------------ |
-| 1-monolith         | 200 OK       | full Transfer (`id`, accounts, `amount`, `createdAt`, `completedAt`) — synchronous, atomic |
+| 1-monolith         | 202 Accepted | full Transfer (`id`, accounts, `amount`, `createdAt`, `completedAt`) — synchronous, atomic |
 | 2-microservices    | 200 OK       | `{transferId, status, message}` — synchronous, may leave money lost on failure             |
 | 3-two-phase-commit | 200 OK       | full Transfer (atomic via 2PC) — synchronous, all-or-nothing across services               |
 | 4-messaging        | 202 Accepted | `{id, status, message, createdAt, updatedAt}` — async, poll `GET /transfers/{id}`          |
 | 5-temporal         | 202 Accepted | `{transferId}` — async via Temporal; observe in the UI or `GET /transfers/{workflowId}`    |
 
-### Module 5 — Temporal UI
+### Configuration env vars
 
-When running module 5, the Temporal Web UI is available
-at `http://localhost:8233`. It shows workflow executions,
-event history, and compensation steps in real time.
+Each module reads its configuration from environment
+variables. The defaults are good for local development;
+override them for non-Docker runs. Module-specific
+variables (RabbitMQ, Temporal, …) are documented in the
+relevant module's README.
 
-## Architecture
+| Variable              | Description                          | Default                 |
+| --------------------- | ------------------------------------ | ----------------------- |
+| `DB_HOST`             | PostgreSQL hostname                  | `localhost`             |
+| `DB_USER`             | PostgreSQL username                  | `demo`                  |
+| `DB_PASS`             | PostgreSQL password                  | `demo`                  |
+| `ACCOUNT_SERVICE_URL` | Account service base URL (modules 2, 3, 5) | `http://localhost:9080` |
+| `RABBITMQ_HOST`       | RabbitMQ hostname (module 4)         | `localhost`             |
+| `TEMPORAL_ADDRESS`    | Temporal Server address (module 5)   | `localhost:7233`        |
 
-### Module 1 — Monolith (ACID)
+### Building from source
 
-```mermaid
-graph TD
-    Client --> App
-    App -->|@Transactional| DB[(PostgreSQL)]
+Build every Maven module from the repo root with [Task](https://taskfile.dev):
+
+```bash
+task build       # mvn -B package -DskipTests for every module
+task test        # mvn -B test for every module
+task clean       # mvn -B clean for every module
 ```
 
-A single service handles everything. The debit and credit
-happen inside one database transaction — if either fails,
-both roll back automatically.
+Or build a single module on its own:
 
-### Module 2 — Microservices (no safety net)
-
-```mermaid
-graph TD
-    Client --> Transfer[transfer-service :8080]
-    Transfer -->|POST /debit| Account[account-service :9080]
-    Transfer -->|POST /credit| Account
-    Account --> DB[(PostgreSQL)]
+```bash
+cd <module>
+mvn package -DskipTests
 ```
-
-Two services communicate over REST. If the credit call
-fails after the debit succeeds, money disappears from
-the system — there is no distributed transaction to roll
-back the debit.
-
-### Module 3 — Two-phase commit (PostgreSQL prepared transactions)
-
-```mermaid
-graph TD
-    Client --> Transfer[transfer-service :8080]
-    Transfer -->|/debit/prepare| Account[account-service :9080]
-    Transfer -->|/credit/prepare| Account
-    Transfer -->|local PREPARE TRANSACTION journal| DB[(PostgreSQL)]
-    Transfer -->|INSERT transfer_decisions| DB
-    Transfer -->|/xa/{xid}/commit or rollback| Account
-    Account --> DB
-```
-
-The transfer-service plays both **coordinator** and **participant**.
-It drives a 3-participant 2-phase commit (debit, credit, journal)
-using PostgreSQL's native `PREPARE TRANSACTION` /
-`COMMIT PREPARED` / `ROLLBACK PREPARED` primitives. Coordinator
-durability is anchored by an autonomous insert into
-`transfer_decisions` before the commit phase. The protocol restores
-atomicity but exposes its operational cost: the debited row stays
-locked between prepare and commit, and the coordinator becomes a
-single point of failure that motivates the asynchronous patterns in
-modules 4 and 5.
-
-### Module 4 — Messaging (RabbitMQ + DLQ)
-
-```mermaid
-graph TD
-    Client --> Transfer[transfer-service :8080]
-    Transfer -->|DebitCommand| MQ[RabbitMQ]
-    MQ --> Account[account-service :9080]
-    Account -->|AccountResult| MQ
-    MQ --> Transfer
-    MQ -->|on failure| DLQ[(DLQ)]
-```
-
-Services communicate asynchronously via RabbitMQ. Failed
-messages are routed to a Dead Letter Queue for inspection
-and replay. The credit step still has no automatic
-compensation if it fails after a successful debit.
-
-### Module 5 — Temporal (Saga pattern)
-
-```mermaid
-graph TD
-    Client --> Workflow[workflow :8080]
-    Workflow -->|start| Temporal[Temporal Server :7233]
-    Temporal -->|debitAccount| Account[account-service :9080]
-    Temporal -->|creditAccount| Account
-    Temporal -->|reverseDebit on failure| Account
-    UI[Temporal UI :8233] --> Temporal
-```
-
-Temporal persists workflow state durably. Activities are
-retried automatically on failure. If the credit fails
-after the debit succeeds, the Saga compensates by
-reversing the debit — no money is ever lost, even if
-the workflow service crashes mid-execution.
 
 ## Lines of code
 
@@ -256,26 +178,6 @@ A few takeaways:
 - Module 5 is durable and resilient by design: Temporal
   persists workflow state, retries activities, and drives
   Saga compensation — application code stays small.
-
-## Configuration
-
-Each module reads its configuration from environment
-variables with sensible defaults for local development.
-
-| Variable              | Description                        | Default                 |
-| --------------------- | ---------------------------------- | ----------------------- |
-| `DB_HOST`             | PostgreSQL hostname                | `localhost`             |
-| `DB_USER`             | PostgreSQL username                | `demo`                  |
-| `DB_PASS`             | PostgreSQL password                | `demo`                  |
-| `ACCOUNT_SERVICE_URL` | Account service base URL (2, 3, 5) | `http://localhost:9080` |
-| `RABBITMQ_HOST`       | RabbitMQ hostname (4)              | `localhost`             |
-| `TEMPORAL_ADDRESS`    | Temporal Server address (5)        | `localhost:7233`        |
-
-> **Note for module `3-two-phase-commit`:** PostgreSQL must be started with
-> `max_prepared_transactions >= 50` for `PREPARE TRANSACTION`
-> to work. The module's `compose.yaml` sets this automatically
-> via `command:`; for non-Docker runs the operator must enable
-> it manually in `postgresql.conf`.
 
 ## License
 
