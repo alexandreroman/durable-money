@@ -223,13 +223,25 @@ sources and configuration files (`pom.xml`, `compose.yaml`,
 `application.yaml`, `schema.sql`, `Dockerfile`, etc.),
 excluding comments and blank lines.
 
-| Module               |  LOC | Notes                                      |
-| -------------------- | ---: | ------------------------------------------ |
-| `1-monolith`         |  485 | Atomic via @Transactional; tightly coupled |
-| `2-microservices`    |  558 | Incomplete: money lost if credit fails     |
-| `3-two-phase-commit` |  998 | Atomic but blocking; coordinator is a SPOF |
-| `4-messaging`        |  837 | Async with DLQ, but no auto-compensation   |
-| `5-temporal`         |  767 | Auto-compensation via Saga; no money lost  |
+The `Q` column rates each implementation's behavior under
+failure: ✅ no money lost, 🟡 correct but with significant
+operational caveats, ❌ money silently lost.
+
+| Module               |  LOC |  Q  | Notes                                    |
+| -------------------- | ---: | :-: | ---------------------------------------- |
+| `1-monolith`         |  485 |  ✅  | Atomic via @Transactional; monolithic    |
+| `2-microservices`    |  558 |  ❌  | Incomplete: money lost if credit fails   |
+| `3-two-phase-commit` |  998 |  🟡  | Atomic but blocking; coordinator SPOF    |
+| `4-messaging`        |  837 |  🟡  | Async + DLQ; no auto-compensation        |
+| `5-temporal`         |  767 |  ✅  | Durable & resilient; no money lost       |
+
+```mermaid
+xychart-beta horizontal
+    title "Lines of code per module"
+    x-axis ["1-monolith", "2-microservices", "3-two-phase-commit", "4-messaging", "5-temporal"]
+    y-axis "LOC" 0 --> 1100
+    bar [485, 558, 998, 837, 767]
+```
 
 A few takeaways:
 
@@ -238,12 +250,12 @@ A few takeaways:
 - Module 3 is roughly 2× the monolith: hand-rolling 2PC over
   PostgreSQL prepared transactions has a real cost in
   coordinator and journaling code.
-- Module 4 needs more files than module 3 (handlers per
-  message type) but stays smaller in lines, because
-  asynchronous messaging avoids the coordinator state machine.
-- Module 5 returns to a moderate size: the durable execution
-  and Saga compensation logic is carried by the Temporal SDK,
-  not by application code.
+- Module 4 stays below module 3 in lines of code:
+  asynchronous messaging via RabbitMQ avoids the
+  synchronous coordinator state machine of 2PC.
+- Module 5 is durable and resilient by design: Temporal
+  persists workflow state, retries activities, and drives
+  Saga compensation — application code stays small.
 
 ## Configuration
 

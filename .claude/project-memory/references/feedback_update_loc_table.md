@@ -9,8 +9,12 @@ type: feedback
 After modifying any source code (`.java`) or configuration
 file (`pom.xml`, `compose.yaml`, `application.yaml`,
 `schema.sql`, `Dockerfile`, `.properties`, etc.) in any
-of the five modules, regenerate the "Lines of code" table
-in `README.md` (section `## Lines of code`).
+of the five modules, regenerate **both** artifacts in the
+`## Lines of code` section of `README.md`:
+
+1. The Markdown table (LOC column).
+2. The Mermaid `xychart-beta` bar chart's `bar [...]`
+   values — they must match the table exactly.
 
 **Why:** The LOC table is a key teaching artifact of the
 tutorial. It quantifies the relative complexity of the
