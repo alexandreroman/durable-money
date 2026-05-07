@@ -6,6 +6,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Account balance operations with consumer-side idempotency.
+ *
+ * <p>Temporal activities have at-least-once execution semantics: an activity
+ * whose HTTP response is lost in transit will be retried by the worker, even
+ * though the side effect already happened. The {@code transfers} table holds
+ * a unique {@code (transferId, operation)} slot; each balance update is
+ * paired with a slot insert in the same {@code @Transactional} unit, so a
+ * retry either inserts the slot AND updates the balance atomically (first
+ * attempt) or finds the slot already taken and short-circuits (replay).
+ *
+ * <p>Compensations use a distinct {@code "reverse_debit"} operation key so
+ * they cannot collide with the original {@code "debit"} slot — the same
+ * transferId can therefore safely be debited and later compensated.
+ */
 @Service
 class AccountService {
     private final AccountRepository accountRepository;
@@ -38,6 +53,9 @@ class AccountService {
             throw new InsufficientFundsException("Insufficient funds in account " + id);
         }
         if (!accountRepository.recordTransfer(transferId, "debit", id, amount)) {
+            // Slot already taken: this transferId has already debited this account on a
+            // prior attempt whose response was lost. Return the current state without
+            // re-applying — Temporal sees a successful retry and moves on.
             return account;
         }
         var newBalance = account.balance().subtract(amount);
@@ -62,6 +80,7 @@ class AccountService {
         var account = accountRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AccountNotFoundException(id));
         if (!accountRepository.recordTransfer(transferId, operation, id, amount)) {
+            // Replay of an already-credited (or already-compensated) attempt — see debit().
             return account;
         }
         var newBalance = account.balance().add(amount);
