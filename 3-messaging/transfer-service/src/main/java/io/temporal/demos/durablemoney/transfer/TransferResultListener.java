@@ -34,6 +34,8 @@ class TransferResultListener {
         switch (result.type()) {
             case DEBIT -> {
                 if (result.success()) {
+                    // Dual-write window: a crash between this DB update and the publish below
+                    // strands the transfer in CREDITING. Tutorial accepts this gap; module 4 fixes it.
                     transferRepository.markCrediting(result.transferId());
                     var creditCmd = new AccountCommandMessage(
                             result.transferId(), transfer.targetAccountId(), transfer.amount(),

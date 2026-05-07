@@ -47,6 +47,8 @@ class AccountRepository {
                 .optional();
     }
 
+    // Row count is intentionally ignored: findByIdForUpdate (called earlier in the same transaction)
+    // holds a row-level lock that prevents the row from being deleted before this UPDATE.
     void updateBalance(UUID id, BigDecimal balance) {
         jdbcClient.sql("UPDATE accounts SET balance = ? WHERE id = ?")
                 .params(balance, id)

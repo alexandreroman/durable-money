@@ -41,12 +41,17 @@ class AccountController {
 
     @PostMapping("/{id}/debit")
     AccountView debit(@PathVariable UUID id, @RequestBody @Valid DebitCredit request) {
-        return AccountView.from(accountService.debit(id, request.amount()));
+        return AccountView.from(accountService.debit(request.transferId(), id, request.amount()));
     }
 
     @PostMapping("/{id}/credit")
     AccountView credit(@PathVariable UUID id, @RequestBody @Valid DebitCredit request) {
-        return AccountView.from(accountService.credit(id, request.amount()));
+        return AccountView.from(accountService.credit(request.transferId(), id, request.amount()));
+    }
+
+    @PostMapping("/{id}/reverse-debit")
+    AccountView reverseDebit(@PathVariable UUID id, @RequestBody @Valid DebitCredit request) {
+        return AccountView.from(accountService.reverseDebit(request.transferId(), id, request.amount()));
     }
 
     @ExceptionHandler(InsufficientFundsException.class)
@@ -69,6 +74,7 @@ class AccountController {
     ) {}
 
     record DebitCredit(
+            @NotNull UUID transferId,
             @NotNull @DecimalMin("0.01") BigDecimal amount
     ) {}
 

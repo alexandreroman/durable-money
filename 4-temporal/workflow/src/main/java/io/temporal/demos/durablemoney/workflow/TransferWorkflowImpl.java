@@ -8,6 +8,7 @@ import io.temporal.demos.durablemoney.workflow.AccountActivities.ReverseDebitInp
 import io.temporal.failure.ActivityFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Saga;
+import io.temporal.workflow.Workflow;
 
 import static io.temporal.workflow.Workflow.newActivityStub;
 import static java.time.Duration.ofSeconds;
@@ -19,6 +20,17 @@ class TransferWorkflowImpl implements TransferWorkflow {
                     .setStartToCloseTimeout(ofSeconds(30))
                     .setRetryOptions(RetryOptions.newBuilder()
                             .setMaximumAttempts(3)
+                            .build())
+                    .build());
+
+    // Compensation activities retry indefinitely: a failed rollback would strand the source
+    // account in a debited-but-not-credited state, which is precisely what the Saga must avoid.
+    // setMaximumAttempts(0) = unlimited; only StartToClose bounds each individual attempt.
+    private final AccountActivities compensationActivities = newActivityStub(AccountActivities.class,
+            ActivityOptions.newBuilder()
+                    .setStartToCloseTimeout(ofSeconds(30))
+                    .setRetryOptions(RetryOptions.newBuilder()
+                            .setMaximumAttempts(0)
                             .build())
                     .build());
 
@@ -41,16 +53,15 @@ class TransferWorkflowImpl implements TransferWorkflow {
             // makes this safe across crashes: on replay the workflow deterministically re-runs
             // the same activities and registrations from its history.
             activities.debitAccount(debitInput);
-            saga.addCompensation(activities::reverseDebit, reverseDebitInput);
+            saga.addCompensation(compensationActivities::reverseDebit, reverseDebitInput);
 
             // If creditAccount fails, saga.compensate() will run reverseDebit to undo the debit.
             activities.creditAccount(creditInput);
 
             return new Result(input.transferId(), "COMPLETED", null);
         } catch (ActivityFailure e) {
-            // Temporal retried the activity before reaching here (maxAttempts exhausted).
-            // saga.compensate() executes registered compensations in LIFO order.
-            saga.compensate();
+            // Detached scope ensures compensations run even if the workflow itself was cancelled.
+            Workflow.newDetachedCancellationScope(saga::compensate).run();
             return new Result(input.transferId(), "FAILED", e.getMessage());
         }
     }
