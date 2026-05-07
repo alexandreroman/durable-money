@@ -6,7 +6,7 @@ to durable execution with Temporal. Designed for developers
 who want to understand *why* distributed transactions are
 hard and *how* Temporal solves the problem.
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![Build](https://github.com/alexandreroman/durable-money/actions/workflows/build.yml/badge.svg)](https://github.com/alexandreroman/durable-money/actions/workflows/build.yml)
 
 ## Features
 
