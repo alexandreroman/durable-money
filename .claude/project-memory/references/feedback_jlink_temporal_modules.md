@@ -22,7 +22,7 @@ container crash-loops at boot with
 `NoClassDefFoundError: com.sun.management.OperatingSystemMXBean`
 originating from `Worker.<clinit>` /
 `WorkerFactory.newWorker`. The error only surfaced
-in this repo after module 4 was migrated to the
+in this repo after module 5 was migrated to the
 Temporal Spring Boot starter — the prior manual SDK
 wiring did not trigger this initializer at startup.
 
@@ -30,5 +30,5 @@ wiring did not trigger this initializer at startup.
 --add-modules` line in any module's Dockerfile for
 a service that depends on `io.temporal:*`, ensure
 `jdk.management` is in the comma-separated list.
-Module 4's `4-temporal/workflow/Dockerfile` is the
+Module 5's `5-temporal/workflow/Dockerfile` is the
 current canonical example.

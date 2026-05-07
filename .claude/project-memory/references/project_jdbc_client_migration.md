@@ -15,9 +15,9 @@ so restarts against a persisted volume don't crash.
 
 **Status:** all four modules fully migrated as of 2026-05-06
 (`1-monolith`, `2-microservices/account-service`,
-`3-messaging/account-service`, `3-messaging/transfer-service`,
-`4-temporal/account-service`). The Temporal worker in
-`4-temporal/workflow` and the `2-microservices/transfer-service`
+`4-messaging/account-service`, `4-messaging/transfer-service`,
+`5-temporal/account-service`). The Temporal worker in
+`5-temporal/workflow` and the `2-microservices/transfer-service`
 never used JPA.
 
 **Why:** the tutorial's pedagogical goal is to make SQL and

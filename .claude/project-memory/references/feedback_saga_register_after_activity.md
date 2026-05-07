@@ -24,14 +24,14 @@ throws `ActivityFailure`, the catch block calls
 `saga.compensate()`, and any pre-registered
 compensation runs even though its guarded activity
 never succeeded. We hit this concretely in module
-4: registering `reverseDebit` before `debitAccount`
+5: registering `reverseDebit` before `debitAccount`
 caused a failed 5000 transfer to credit the source
 account — balance went 800 → 5800 because
 `reverseDebit` ran when no debit had ever
 occurred.
 
 **How to apply:** When writing or reviewing any
-Temporal Saga in this repo (currently `4-temporal`),
+Temporal Saga in this repo (currently `5-temporal`),
 the registration line for each step must come
 *after* the activity call returns, not before. This
 is safe across crashes because Temporal's event

@@ -6,7 +6,7 @@ type: feedback
 
 # Keep workflow-packages: io.temporal.demos broad
 
-In `4-temporal/workflow/src/main/resources/application.yaml`,
+In `5-temporal/workflow/src/main/resources/application.yaml`,
 the Temporal Spring Boot starter is configured with:
 
 ```yaml
