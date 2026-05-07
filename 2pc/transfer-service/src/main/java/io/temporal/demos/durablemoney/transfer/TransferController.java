@@ -36,11 +36,10 @@ class TransferController {
         return switch (result) {
             case TransferCoordinator.Success s -> ResponseEntity.ok(TransferView.from(s));
             case TransferCoordinator.Failure f -> {
-                var problem = ProblemDetail.forStatusAndDetail(
-                        HttpStatus.valueOf(f.cause().status()), f.cause().detail());
+                var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, f.cause().detail());
                 problem.setTitle("Transfer aborted");
                 problem.setProperty("transferId", f.transferId());
-                yield ResponseEntity.status(f.cause().status()).body(problem);
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
             }
         };
     }

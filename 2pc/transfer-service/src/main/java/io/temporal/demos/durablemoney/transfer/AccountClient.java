@@ -1,5 +1,6 @@
 package io.temporal.demos.durablemoney.transfer;
 
+import io.temporal.demos.durablemoney.transfer.TransferCoordinator.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -44,7 +45,7 @@ class AccountClient {
         } catch (RestClientResponseException e) {
             HttpStatusCode status = e.getStatusCode();
             if (status.is4xxClientError()) {
-                throw new TransferCoordinator.BusinessException(status.value(),
+                throw new BusinessException(status.value(),
                         extractDetail(e, "prepare failed: " + status));
             }
             throw e;

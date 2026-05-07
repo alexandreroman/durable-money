@@ -48,6 +48,10 @@ class TransferCoordinator {
             accountClient.prepareCredit(targetAccountId, amount, creditXid);
             prepared.add(creditXid);
 
+            // Phase 1 (last participant): the local journal is PREPARE'd LAST so we never lock our own
+            // row if a remote prepare already failed. By symmetry with the commit phase, the local
+            // participant is also COMMITTED last — that order is what makes the coordinator's crash
+            // recovery story tractable in production deployments.
             insertJournalAndPrepare(transferId, sourceAccountId, targetAccountId, amount,
                     createdAt, journalXid);
             prepared.add(journalXid);
@@ -60,6 +64,9 @@ class TransferCoordinator {
 
         if (decision.equals("COMMIT")) {
             commitAll(prepared, journalXid);
+            // Phase 6 (post-2PC): the protocol-visible outcome is already durable in transfer_decisions
+            // and the prepared xacts; this UPDATE is purely for observability so GET /transfers/{id}
+            // reflects the final state.
             transferRepository.markCompleted(transferId, "COMMITTED", Instant.now());
             return Result.success(transferId, sourceAccountId, targetAccountId, amount, createdAt);
         } else {
@@ -121,7 +128,7 @@ class TransferCoordinator {
     private void commitAll(List<String> prepared, String journalXid) {
         for (var xid : prepared) {
             if (xid.equals(journalXid)) {
-                runLocal("COMMIT PREPARED '" + xid + "'");
+                runLocalForXid(xid, "COMMIT PREPARED");
             } else {
                 accountClient.commit(xid);
             }
@@ -131,17 +138,27 @@ class TransferCoordinator {
     private void rollbackAll(List<String> prepared, String journalXid) {
         for (var xid : prepared) {
             if (xid.equals(journalXid)) {
-                runLocal("ROLLBACK PREPARED '" + xid + "'");
+                runLocalForXid(xid, "ROLLBACK PREPARED");
             } else {
                 accountClient.rollback(xid);
             }
         }
     }
 
-    private void runLocal(String command) {
-        try (Connection conn = dataSource.getConnection();
-             Statement st = conn.createStatement()) {
-            st.execute(command);
+    private void runLocalForXid(String xid, String command) {
+        try (Connection conn = dataSource.getConnection()) {
+            try (PreparedStatement st = conn.prepareStatement(
+                    "SELECT 1 FROM pg_prepared_xacts WHERE gid = ?")) {
+                st.setString(1, xid);
+                try (var rs = st.executeQuery()) {
+                    if (!rs.next()) {
+                        return;
+                    }
+                }
+            }
+            try (Statement st = conn.createStatement()) {
+                st.execute(command + " '" + xid + "'");
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
