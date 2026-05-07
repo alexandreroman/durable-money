@@ -55,3 +55,4 @@ logs/
 # Claude Code
 .claude/agent-memory/
 .claude/worktrees/
+.worktrees/
