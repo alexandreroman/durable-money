@@ -154,15 +154,15 @@ operational caveats, ❌ money silently lost.
 | `1-monolith`         |  485 |  ✅  | Atomic via @Transactional; monolithic    |
 | `2-microservices`    |  574 |  ❌  | Incomplete: money lost if credit fails   |
 | `3-two-phase-commit` | 1014 |  🟡  | Atomic but blocking; coordinator SPOF    |
-| `4-messaging`        |  872 |  🟡  | Async + DLQ; no auto-compensation        |
+| `4-messaging`        | 1500 |  🟡  | Async + managed DLQ; no auto-compensation |
 | `5-temporal`         |  783 |  ✅  | Durable & resilient; no money lost       |
 
 ```mermaid
 xychart-beta horizontal
     title "Lines of code per module"
     x-axis ["1-monolith", "2-microservices", "3-two-phase-commit", "4-messaging", "5-temporal"]
-    y-axis "LOC" 0 --> 1100
-    bar [485, 574, 1014, 872, 783]
+    y-axis "LOC" 0 --> 1600
+    bar [485, 574, 1014, 1500, 783]
 ```
 
 A few takeaways:
@@ -172,12 +172,18 @@ A few takeaways:
 - Module 3 is roughly 2× the monolith: hand-rolling 2PC over
   PostgreSQL prepared transactions has a real cost in
   coordinator and journaling code.
-- Module 4 stays below module 3 in lines of code:
-  asynchronous messaging via RabbitMQ avoids the
-  synchronous coordinator state machine of 2PC.
-- Module 5 is durable and resilient by design: Temporal
-  persists workflow state, retries activities, and drives
-  Saga compensation — application code stays small.
+- Module 4 grows past module 3 once the DLQ is fully
+  managed: draining each DLQ into Postgres, exposing
+  `/admin/dlq` for inspect / replay / discard, and the
+  consumer-side idempotency that makes replay safe all
+  add real lines. Async messaging avoids the 2PC
+  coordinator, but the "parking lot" is operational code
+  someone has to write and maintain.
+- Module 5 is durable and resilient by design *with* fewer
+  lines than module 4: Temporal persists workflow state,
+  retries activities, and drives Saga compensation — the
+  bookkeeping that DLQ-based recovery requires lives in
+  the SDK, not in application code.
 
 ## License
 
