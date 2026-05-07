@@ -1,4 +1,4 @@
-# durable-money
+# Durable Money
 
 A hands-on tutorial comparing five approaches to building
 resilient money transfer systems — from a classic monolith
