@@ -25,5 +25,5 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - run: mvn -B package -DskipTests
+      - run: mvn -B --no-transfer-progress package -DskipTests
         working-directory: ${{ matrix.module }}
