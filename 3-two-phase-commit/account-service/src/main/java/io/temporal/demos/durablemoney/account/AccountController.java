@@ -39,6 +39,18 @@ class AccountController {
         return AccountView.from(accountService.getAccount(id));
     }
 
+    @PostMapping("/{id}/debit/prepare")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void prepareDebit(@PathVariable UUID id, @RequestBody @Valid PrepareRequest request) {
+        accountService.prepareDebit(id, request.amount(), request.xid());
+    }
+
+    @PostMapping("/{id}/credit/prepare")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void prepareCredit(@PathVariable UUID id, @RequestBody @Valid PrepareRequest request) {
+        accountService.prepareCredit(id, request.amount(), request.xid());
+    }
+
     @ExceptionHandler(AccountNotFoundException.class)
     ProblemDetail handleNotFound(AccountNotFoundException e) {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
@@ -46,9 +58,28 @@ class AccountController {
         return problem;
     }
 
+    @ExceptionHandler(InsufficientFundsException.class)
+    ProblemDetail handleInsufficientFunds(InsufficientFundsException e) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+        problem.setTitle("Insufficient funds");
+        return problem;
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    ProblemDetail handleBadXid(IllegalArgumentException e) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+        problem.setTitle("Invalid request");
+        return problem;
+    }
+
     record NewAccount(
             @NotBlank String owner,
             @NotNull @DecimalMin("0") BigDecimal initialBalance
+    ) {}
+
+    record PrepareRequest(
+            @NotNull @DecimalMin("0.01") BigDecimal amount,
+            @NotBlank String xid
     ) {}
 
     record AccountView(UUID id, String owner, BigDecimal balance, Instant createdAt) {

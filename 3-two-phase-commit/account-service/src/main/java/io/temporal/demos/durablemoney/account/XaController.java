@@ -12,22 +12,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/xa/{xid}")
 class XaController {
-    private final PreparedTransactionService preparedTxService;
+    private final AccountService accountService;
 
-    XaController(PreparedTransactionService preparedTxService) {
-        this.preparedTxService = preparedTxService;
+    XaController(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @PostMapping("/commit")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void commit(@PathVariable String xid) {
-        preparedTxService.commit(xid);
+        accountService.commit(xid);
     }
 
     @PostMapping("/rollback")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void rollback(@PathVariable String xid) {
-        preparedTxService.rollback(xid);
+        accountService.rollback(xid);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
