@@ -10,6 +10,9 @@ spring:
       mode: always
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
+    listener:
+      simple:
+        default-requeue-rejected: false
   mvc:
     problemdetails:
       enabled: true

@@ -23,3 +23,4 @@
 - [Bind OffsetDateTime, not Instant, with JdbcClient on PostgreSQL](references/feedback_jdbc_instant_binding.md) — pgjdbc cannot infer SQL type for Instant; convert via .atOffset(ZoneOffset.UTC) at bind site, keep domain types as Instant
 - [Register Saga compensations AFTER the activity completes](references/feedback_saga_register_after_activity.md) — Temporal: pre-registering reverseDebit caused a failed 5000 transfer to credit the source 800→5800
 - [Update README LOC table after code/config changes](references/feedback_update_loc_table.md) — refresh the 'Lines of code' table in README.md after editing Java sources or config files in any module
+- [Spring Boot 4 ships Jackson 3 (tools.jackson.*)](references/project_spring_boot_4_jackson_3.md) — import tools.jackson.databind.ObjectMapper; com.fasterxml.jackson.databind is NOT on the classpath
