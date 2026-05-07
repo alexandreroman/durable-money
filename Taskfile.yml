@@ -3,14 +3,10 @@ version: '3'
 vars:
   MODULES:
     - 1-monolith
-    - 2-microservices/account-service
-    - 2-microservices/transfer-service
-    - 3-two-phase-commit/account-service
-    - 3-two-phase-commit/transfer-service
-    - 4-messaging/account-service
-    - 4-messaging/transfer-service
-    - 5-temporal/account-service
-    - 5-temporal/workflow
+    - 2-microservices
+    - 3-two-phase-commit
+    - 4-messaging
+    - 5-temporal
 
 tasks:
   default:
