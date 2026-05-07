@@ -54,4 +54,21 @@ class AccountRepository {
                 .params(balance, id)
                 .update();
     }
+
+    /**
+     * Records that a transfer leg ({@code debit} or {@code credit}) has been applied for a
+     * given {@code transferId}. Returns {@code true} if a new row was inserted (first time
+     * this leg runs), or {@code false} if a row already existed (RabbitMQ at-least-once
+     * redelivery — caller must short-circuit and skip the balance update).
+     */
+    boolean recordTransfer(UUID transferId, String operation, UUID accountId, BigDecimal amount) {
+        var inserted = jdbcClient.sql("""
+                        INSERT INTO transfers (transfer_id, operation, account_id, amount)
+                        VALUES (?, ?, ?, ?)
+                        ON CONFLICT (transfer_id, operation) DO NOTHING
+                        """)
+                .params(transferId, operation, accountId, amount)
+                .update();
+        return inserted == 1;
+    }
 }

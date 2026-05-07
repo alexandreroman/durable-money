@@ -23,8 +23,8 @@ class AccountCommandListener {
         AccountResultMessage result;
         try {
             switch (cmd.type()) {
-                case DEBIT -> accountService.debit(cmd.accountId(), cmd.amount());
-                case CREDIT -> accountService.credit(cmd.accountId(), cmd.amount());
+                case DEBIT -> accountService.debit(cmd.transferId(), cmd.accountId(), cmd.amount());
+                case CREDIT -> accountService.credit(cmd.transferId(), cmd.accountId(), cmd.amount());
             }
             result = new AccountResultMessage(cmd.transferId(), cmd.accountId(), cmd.type(), true, null);
             LOGGER.info("Processed {} for transfer {}", cmd.type(), cmd.transferId());

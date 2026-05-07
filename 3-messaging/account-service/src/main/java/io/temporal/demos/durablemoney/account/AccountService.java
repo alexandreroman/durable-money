@@ -20,14 +20,19 @@ class AccountService {
     }
 
     @Transactional
-    Account debit(UUID id, BigDecimal amount) {
+    Account debit(UUID transferId, UUID id, BigDecimal amount) {
         // Locked read + check + explicit UPDATE + commit form a critical section serialized by
         // PostgreSQL on the account row. Throwing from inside @Transactional triggers an automatic
         // rollback, so InsufficientFundsException needs no manual compensation.
         var account = accountRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AccountNotFoundException(id));
+        // Funds check runs BEFORE recording the idempotency slot: a failed debit must remain
+        // retryable (the slot is consumed only when the balance actually changes).
         if (account.balance().compareTo(amount) < 0) {
             throw new InsufficientFundsException("Insufficient funds in account " + id);
+        }
+        if (!accountRepository.recordTransfer(transferId, "debit", id, amount)) {
+            return account;
         }
         var newBalance = account.balance().subtract(amount);
         accountRepository.updateBalance(id, newBalance);
@@ -35,10 +40,13 @@ class AccountService {
     }
 
     @Transactional
-    Account credit(UUID id, BigDecimal amount) {
+    Account credit(UUID transferId, UUID id, BigDecimal amount) {
         // Pessimistic lock kept symmetric with debit() to serialize concurrent updates on the row.
         var account = accountRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AccountNotFoundException(id));
+        if (!accountRepository.recordTransfer(transferId, "credit", id, amount)) {
+            return account;
+        }
         var newBalance = account.balance().add(amount);
         accountRepository.updateBalance(id, newBalance);
         return new Account(account.id(), account.owner(), newBalance, account.createdAt());
