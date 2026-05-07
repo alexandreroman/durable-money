@@ -26,7 +26,7 @@ declared explicitly when configuring `RestClient` timeouts via
 
 **Why:** Discovered when adding connect/read timeouts to the
 `RestClient` beans in `2-microservices/transfer-service` and
-`4-temporal/workflow`. Most online docs/snippets still reference
+`5-temporal/workflow`. Most online docs/snippets still reference
 the Boot 3 class name, which compiles against `spring-boot`
 3.x but not 4.x.
 

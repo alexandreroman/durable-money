@@ -5,10 +5,12 @@ vars:
     - 1-monolith
     - 2-microservices/account-service
     - 2-microservices/transfer-service
-    - 3-messaging/account-service
-    - 3-messaging/transfer-service
-    - 4-temporal/account-service
-    - 4-temporal/workflow
+    - 3-two-phase-commit/account-service
+    - 3-two-phase-commit/transfer-service
+    - 4-messaging/account-service
+    - 4-messaging/transfer-service
+    - 5-temporal/account-service
+    - 5-temporal/workflow
 
 tasks:
   default:

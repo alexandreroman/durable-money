@@ -9,9 +9,9 @@
         <relativePath/>
     </parent>
     <groupId>io.temporal.demos.durablemoney</groupId>
-    <artifactId>durable-money-2pc-transfer</artifactId>
+    <artifactId>durable-money-two-phase-commit-transfer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Durable Money :: 2pc :: Transfer</name>
+    <name>Durable Money :: Two-Phase Commit :: Transfer</name>
     <properties>
         <java.version>25</java.version>
         <uuid-creator.version>6.1.1</uuid-creator.version>

@@ -9,8 +9,8 @@ See [README.md](README.md) for full documentation.
 
 - Java 25, Spring Boot 4.0.5
 - PostgreSQL 17 (all modules)
-- RabbitMQ 4 (module 3 only)
-- Temporal SDK 1.35.0 (module 4 only)
+- RabbitMQ 4 (module 4 only)
+- Temporal SDK 1.35.0 (module 5 only)
 - Docker Compose (each module ships its own)
 
 ## Build & run
@@ -27,8 +27,9 @@ mvn package -DskipTests
 
 - `1-monolith` — single service, ACID `@Transactional`
 - `2-microservices` — REST calls, no distributed transaction
-- `3-messaging` — RabbitMQ commands/results with DLQ
-- `4-temporal` — Temporal Saga with automatic compensation
+- `3-two-phase-commit` — hand-rolled 2PC over PostgreSQL prepared transactions
+- `4-messaging` — RabbitMQ commands/results with DLQ
+- `5-temporal` — Temporal Saga with automatic compensation
 
 ## Agents
 

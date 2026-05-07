@@ -34,13 +34,13 @@ Each module is fully independent — no shared code, no
 parent POM. Navigate into any numbered directory and run
 `docker compose up --build` to start it.
 
-| Module              | Approach                   | Key concept                             |
-| ------------------- | -------------------------- | --------------------------------------- |
-| `1-monolith`        | Monolith + ACID            | Single `@Transactional` covers everything |
-| `2-microservices`   | REST microservices         | Distributed calls without a safety net  |
-| `2pc`               | 2PC + Postgres prepared tx | Hand-rolled 2-phase commit, no JTA      |
-| `3-messaging`       | RabbitMQ + DLQ             | Async resilience, still no compensation |
-| `4-temporal`        | Temporal + Saga            | Durable execution with auto-compensation|
+| Module                | Approach                   | Key concept                             |
+| --------------------- | -------------------------- | --------------------------------------- |
+| `1-monolith`          | Monolith + ACID            | Single `@Transactional` covers everything |
+| `2-microservices`     | REST microservices         | Distributed calls without a safety net  |
+| `3-two-phase-commit`  | 2PC + Postgres prepared tx | Hand-rolled 2-phase commit, no JTA      |
+| `4-messaging`         | RabbitMQ + DLQ             | Async resilience, still no compensation |
+| `5-temporal`          | Temporal + Saga            | Durable execution with auto-compensation|
 
 ## Getting Started
 
@@ -112,17 +112,17 @@ module, but the response body and HTTP status evolve as
 the architecture moves from synchronous-atomic to
 asynchronous-durable:
 
-| Module | Status       | Response body                                              |
-| ------ | ------------ | ---------------------------------------------------------- |
-| 1      | 200 OK       | full Transfer (`id`, accounts, `amount`, `createdAt`, `completedAt`) — synchronous, atomic |
-| 2      | 200 OK       | `{transferId, status, message}` — synchronous, may leave money lost on failure |
-| 2pc    | 200 OK       | full Transfer (atomic via 2PC) — synchronous, all-or-nothing across services |
-| 3      | 202 Accepted | `{id, status, message, createdAt, updatedAt}` — async, poll `GET /transfers/{id}` |
-| 4      | 202 Accepted | `{transferId}` — async via Temporal; observe in the UI or `GET /transfers/{workflowId}` |
+| Module               | Status       | Response body                                              |
+| -------------------- | ------------ | ---------------------------------------------------------- |
+| 1-monolith           | 200 OK       | full Transfer (`id`, accounts, `amount`, `createdAt`, `completedAt`) — synchronous, atomic |
+| 2-microservices      | 200 OK       | `{transferId, status, message}` — synchronous, may leave money lost on failure |
+| 3-two-phase-commit   | 200 OK       | full Transfer (atomic via 2PC) — synchronous, all-or-nothing across services |
+| 4-messaging          | 202 Accepted | `{id, status, message, createdAt, updatedAt}` — async, poll `GET /transfers/{id}` |
+| 5-temporal           | 202 Accepted | `{transferId}` — async via Temporal; observe in the UI or `GET /transfers/{workflowId}` |
 
-### Module 4 — Temporal UI
+### Module 5 — Temporal UI
 
-When running module 4, the Temporal Web UI is available
+When running module 5, the Temporal Web UI is available
 at `http://localhost:8233`. It shows workflow executions,
 event history, and compensation steps in real time.
 
@@ -155,7 +155,7 @@ fails after the debit succeeds, money disappears from
 the system — there is no distributed transaction to roll
 back the debit.
 
-### Module 2pc — Two-phase commit (PostgreSQL prepared transactions)
+### Module 3-two-phase-commit — Two-phase commit (PostgreSQL prepared transactions)
 
 ```mermaid
 graph TD
@@ -177,9 +177,9 @@ durability is anchored by an autonomous insert into
 atomicity but exposes its operational cost: the debited row stays
 locked between prepare and commit, and the coordinator becomes a
 single point of failure that motivates the asynchronous patterns in
-modules 3 and 4.
+modules 4 and 5.
 
-### Module 3 — Messaging (RabbitMQ + DLQ)
+### Module 4 — Messaging (RabbitMQ + DLQ)
 
 ```mermaid
 graph TD
@@ -196,7 +196,7 @@ messages are routed to a Dead Letter Queue for inspection
 and replay. The credit step still has no automatic
 compensation if it fails after a successful debit.
 
-### Module 4 — Temporal (Saga pattern)
+### Module 5 — Temporal (Saga pattern)
 
 ```mermaid
 graph TD
@@ -224,11 +224,11 @@ variables with sensible defaults for local development.
 | `DB_HOST`             | PostgreSQL hostname               | `localhost`          |
 | `DB_USER`             | PostgreSQL username               | `demo`               |
 | `DB_PASS`             | PostgreSQL password               | `demo`               |
-| `ACCOUNT_SERVICE_URL` | Account service base URL (2, 4)   | `http://localhost:9080` |
-| `RABBITMQ_HOST`       | RabbitMQ hostname (3)             | `localhost`          |
-| `TEMPORAL_ADDRESS`    | Temporal Server address (4)       | `localhost:7233`     |
+| `ACCOUNT_SERVICE_URL` | Account service base URL (2, 3, 5)| `http://localhost:9080` |
+| `RABBITMQ_HOST`       | RabbitMQ hostname (4)             | `localhost`          |
+| `TEMPORAL_ADDRESS`    | Temporal Server address (5)       | `localhost:7233`     |
 
-> **Note for module `2pc`:** PostgreSQL must be started with
+> **Note for module `3-two-phase-commit`:** PostgreSQL must be started with
 > `max_prepared_transactions >= 50` for `PREPARE TRANSACTION`
 > to work. The module's `compose.yaml` sets this automatically
 > via `command:`; for non-Docker runs the operator must enable
