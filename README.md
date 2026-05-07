@@ -34,12 +34,13 @@ Each module is fully independent — no shared code, no
 parent POM. Navigate into any numbered directory and run
 `docker compose up --build` to start it.
 
-| Module              | Approach           | Key concept                             |
-| ------------------- | ------------------ | --------------------------------------- |
-| `1-monolith`        | Monolith + ACID    | Single `@Transactional` covers everything |
-| `2-microservices`   | REST microservices | Distributed calls without a safety net  |
-| `3-messaging`       | RabbitMQ + DLQ     | Async resilience, still no compensation |
-| `4-temporal`        | Temporal + Saga    | Durable execution with auto-compensation|
+| Module              | Approach                   | Key concept                             |
+| ------------------- | -------------------------- | --------------------------------------- |
+| `1-monolith`        | Monolith + ACID            | Single `@Transactional` covers everything |
+| `2-microservices`   | REST microservices         | Distributed calls without a safety net  |
+| `2pc`               | 2PC + Postgres prepared tx | Hand-rolled 2-phase commit, no JTA      |
+| `3-messaging`       | RabbitMQ + DLQ             | Async resilience, still no compensation |
+| `4-temporal`        | Temporal + Saga            | Durable execution with auto-compensation|
 
 ## Getting Started
 
@@ -115,6 +116,7 @@ asynchronous-durable:
 | ------ | ------------ | ---------------------------------------------------------- |
 | 1      | 200 OK       | full Transfer (`id`, accounts, `amount`, `createdAt`, `completedAt`) — synchronous, atomic |
 | 2      | 200 OK       | `{transferId, status, message}` — synchronous, may leave money lost on failure |
+| 2pc    | 200 OK       | full Transfer (atomic via 2PC) — synchronous, all-or-nothing across services |
 | 3      | 202 Accepted | `{id, status, message, createdAt, updatedAt}` — async, poll `GET /transfers/{id}` |
 | 4      | 202 Accepted | `{transferId}` — async via Temporal; observe in the UI or `GET /transfers/{workflowId}` |
 
@@ -152,6 +154,30 @@ Two services communicate over REST. If the credit call
 fails after the debit succeeds, money disappears from
 the system — there is no distributed transaction to roll
 back the debit.
+
+### Module 2pc — Two-phase commit (PostgreSQL prepared transactions)
+
+```mermaid
+graph TD
+    Client --> Transfer[transfer-service :8080]
+    Transfer -->|/debit/prepare| Account[account-service :9080]
+    Transfer -->|/credit/prepare| Account
+    Transfer -->|local PREPARE TRANSACTION journal| DB[(PostgreSQL)]
+    Transfer -->|INSERT transfer_decisions| DB
+    Transfer -->|/xa/{xid}/commit or rollback| Account
+    Account --> DB
+```
+
+The transfer-service plays both **coordinator** and **participant**.
+It drives a 3-participant 2-phase commit (debit, credit, journal)
+using PostgreSQL's native `PREPARE TRANSACTION` /
+`COMMIT PREPARED` / `ROLLBACK PREPARED` primitives. Coordinator
+durability is anchored by an autonomous insert into
+`transfer_decisions` before the commit phase. The protocol restores
+atomicity but exposes its operational cost: the debited row stays
+locked between prepare and commit, and the coordinator becomes a
+single point of failure that motivates the asynchronous patterns in
+modules 3 and 4.
 
 ### Module 3 — Messaging (RabbitMQ + DLQ)
 
@@ -201,6 +227,12 @@ variables with sensible defaults for local development.
 | `ACCOUNT_SERVICE_URL` | Account service base URL (2, 4)   | `http://localhost:9080` |
 | `RABBITMQ_HOST`       | RabbitMQ hostname (3)             | `localhost`          |
 | `TEMPORAL_ADDRESS`    | Temporal Server address (4)       | `localhost:7233`     |
+
+> **Note for module `2pc`:** PostgreSQL must be started with
+> `max_prepared_transactions >= 50` for `PREPARE TRANSACTION`
+> to work. The module's `compose.yaml` sets this automatically
+> via `command:`; for non-Docker runs the operator must enable
+> it manually in `postgresql.conf`.
 
 ## License
 
