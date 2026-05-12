@@ -1,6 +1,8 @@
 package io.temporal.demos.durablemoney.transfer;
 
 import com.github.f4b6a3.uuid.UuidCreator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -17,6 +19,8 @@ import java.util.UUID;
 
 @Service
 class TransferCoordinator {
+    private static final Logger LOG = LoggerFactory.getLogger(TransferCoordinator.class);
+
     private final DataSource dataSource;
     private final AccountClient accountClient;
     private final TransferDecisionRepository decisionRepository;
@@ -39,43 +43,66 @@ class TransferCoordinator {
         var journalXid = xid(transferId, "journal");
         var createdAt = Instant.now();
 
-        var prepared = new ArrayList<String>();
+        var attempted = new ArrayList<String>();
         BusinessFailure businessFailure = null;
+        String decision;
         try {
-            accountClient.prepareDebit(sourceAccountId, amount, debitXid);
-            prepared.add(debitXid);
+            // Track the xid BEFORE the HTTP call: a timeout may still have completed the
+            // server-side PREPARE TRANSACTION, and we must leave it to recovery to finalize.
+            attempted.add(debitXid);
+            try {
+                accountClient.prepareDebit(sourceAccountId, amount, debitXid);
+            } catch (BusinessException be) {
+                attempted.remove(debitXid);
+                businessFailure = new BusinessFailure(be.status, be.getMessage());
+                throw be;
+            }
 
-            accountClient.prepareCredit(targetAccountId, amount, creditXid);
-            prepared.add(creditXid);
+            attempted.add(creditXid);
+            try {
+                accountClient.prepareCredit(targetAccountId, amount, creditXid);
+            } catch (BusinessException be) {
+                attempted.remove(creditXid);
+                businessFailure = new BusinessFailure(be.status, be.getMessage());
+                throw be;
+            }
 
-            // Phase 1 (last participant): the local journal is PREPARE'd LAST so we never lock our own
-            // row if a remote prepare already failed. By symmetry with the commit phase, the local
-            // participant is also COMMITTED last — that order is what makes the coordinator's crash
-            // recovery story tractable in production deployments.
+            // Last-participant rule: prepare the local journal last so we never lock our own
+            // row when a remote prepare has already failed.
+            attempted.add(journalXid);
             insertJournalAndPrepare(transferId, sourceAccountId, targetAccountId, amount,
                     createdAt, journalXid);
-            prepared.add(journalXid);
-        } catch (BusinessException e) {
-            businessFailure = new BusinessFailure(e.status, e.getMessage());
+
+            decision = "COMMIT";
+        } catch (BusinessException be) {
+            decision = "ABORT";
+        } catch (Exception e) {
+            decision = "ABORT";
+            if (businessFailure == null) {
+                businessFailure = new BusinessFailure(503, "transfer in flight: " + e.getMessage());
+            }
+            LOG.warn("phase 1 infrastructure failure for {}: {}", transferId, e.toString());
         }
 
-        var decision = businessFailure == null ? "COMMIT" : "ABORT";
-        decisionRepository.record(transferId, decision, participantsJson(prepared));
+        decisionRepository.record(transferId, decision, participantsJson(attempted),
+                sourceAccountId, targetAccountId, amount);
+
+        var allDone = decision.equals("COMMIT")
+                ? commitAllBestEffort(attempted, journalXid)
+                : rollbackAllBestEffort(attempted, journalXid);
+
+        if (allDone) {
+            decisionRepository.markFinalized(transferId);
+        }
 
         if (decision.equals("COMMIT")) {
-            commitAll(prepared, journalXid);
-            // Phase 6 (post-2PC): the protocol-visible outcome is already durable in transfer_decisions
-            // and the prepared xacts; this UPDATE is purely for observability so GET /transfers/{id}
-            // reflects the final state.
-            transferRepository.markCompleted(transferId, "COMMITTED", Instant.now());
+            if (allDone) {
+                transferRepository.markCompleted(transferId, "COMMITTED", Instant.now());
+            }
             return Result.success(transferId, sourceAccountId, targetAccountId, amount, createdAt);
-        } else {
-            rollbackAll(prepared, journalXid);
-            // No transfers row was committed (journal insert was rolled back if it ran), so
-            // we record an aborted journal row outside the protocol for observability.
-            insertAbortedJournal(transferId, sourceAccountId, targetAccountId, amount, createdAt);
-            return Result.failure(transferId, businessFailure);
         }
+        insertAbortedJournalIdempotent(transferId, sourceAccountId, targetAccountId, amount, createdAt);
+        return Result.failure(transferId, businessFailure);
     }
 
     private void insertJournalAndPrepare(UUID transferId, UUID source, UUID target,
@@ -106,12 +133,13 @@ class TransferCoordinator {
         }
     }
 
-    private void insertAbortedJournal(UUID transferId, UUID source, UUID target,
-                                      BigDecimal amount, Instant createdAt) {
+    private void insertAbortedJournalIdempotent(UUID transferId, UUID source, UUID target,
+                                                BigDecimal amount, Instant createdAt) {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement st = conn.prepareStatement(
                      "INSERT INTO transfers (id, source_account_id, target_account_id, amount, " +
-                             "status, created_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                             "status, created_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?) " +
+                             "ON CONFLICT (id) DO NOTHING")) {
             st.setObject(1, transferId);
             st.setObject(2, source);
             st.setObject(3, target);
@@ -125,40 +153,55 @@ class TransferCoordinator {
         }
     }
 
-    private void commitAll(List<String> prepared, String journalXid) {
-        for (var xid : prepared) {
-            if (xid.equals(journalXid)) {
-                runLocalForXid(xid, "COMMIT PREPARED");
-            } else {
-                accountClient.commit(xid);
+    private boolean commitAllBestEffort(List<String> attempted, String journalXid) {
+        int failures = 0;
+        for (var xid : attempted) {
+            try {
+                if (xid.equals(journalXid)) {
+                    runLocalCommandIfPrepared(dataSource, xid, "COMMIT PREPARED");
+                } else {
+                    accountClient.commit(xid);
+                }
+            } catch (Exception e) {
+                failures++;
+                LOG.warn("commit failed for {}: {}", xid, e.toString());
             }
         }
+        return failures == 0;
     }
 
-    private void rollbackAll(List<String> prepared, String journalXid) {
-        for (var xid : prepared) {
-            if (xid.equals(journalXid)) {
-                runLocalForXid(xid, "ROLLBACK PREPARED");
-            } else {
-                accountClient.rollback(xid);
+    private boolean rollbackAllBestEffort(List<String> attempted, String journalXid) {
+        int failures = 0;
+        for (var xid : attempted) {
+            try {
+                if (xid.equals(journalXid)) {
+                    runLocalCommandIfPrepared(dataSource, xid, "ROLLBACK PREPARED");
+                } else {
+                    accountClient.rollback(xid);
+                }
+            } catch (Exception e) {
+                failures++;
+                LOG.warn("rollback failed for {}: {}", xid, e.toString());
             }
         }
+        return failures == 0;
     }
 
-    private void runLocalForXid(String xid, String command) {
+    static boolean runLocalCommandIfPrepared(DataSource dataSource, String xid, String command) {
         try (Connection conn = dataSource.getConnection()) {
             try (PreparedStatement st = conn.prepareStatement(
                     "SELECT 1 FROM pg_prepared_xacts WHERE gid = ?")) {
                 st.setString(1, xid);
                 try (var rs = st.executeQuery()) {
                     if (!rs.next()) {
-                        return;
+                        return false;
                     }
                 }
             }
             try (Statement st = conn.createStatement()) {
                 st.execute(command + " '" + xid + "'");
             }
+            return true;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

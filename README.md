@@ -151,27 +151,27 @@ operational caveats, ❌ money silently lost.
 
 | Module               |  LOC |  Q  | Notes                                    |
 | -------------------- | ---: | :-: | ---------------------------------------- |
-| `1-monolith`         |  485 |  ✅  | Atomic via @Transactional; monolithic    |
-| `2-microservices`    |  574 |  ❌  | Incomplete: money lost if credit fails   |
-| `3-two-phase-commit` | 1014 |  🟡  | Atomic but blocking; coordinator SPOF    |
-| `4-messaging`        | 1500 |  🟡  | Async + managed DLQ; no auto-compensation |
-| `5-temporal`         |  783 |  ✅  | Durable & resilient; no money lost       |
+| `1-monolith`         |  481 |  ✅  | Atomic via @Transactional; monolithic    |
+| `2-microservices`    |  581 |  ❌  | Incomplete: money lost if credit fails   |
+| `3-two-phase-commit` | 1204 |  🟡  | Atomic + recovery loop; still synchronous and chatty |
+| `4-messaging`        | 1513 |  🟡  | Async + managed DLQ; no auto-compensation |
+| `5-temporal`         |  789 |  ✅  | Durable & resilient; no money lost       |
 
 ```mermaid
 xychart-beta horizontal
     title "Lines of code per module"
     x-axis ["1-monolith", "2-microservices", "3-two-phase-commit", "4-messaging", "5-temporal"]
     y-axis "LOC" 0 --> 1600
-    bar [485, 574, 1014, 1500, 783]
+    bar [481, 581, 1204, 1513, 789]
 ```
 
 A few takeaways:
 
 - The monolith is the baseline — one service, one database,
   one `@Transactional` boundary.
-- Module 3 is roughly 2× the monolith: hand-rolling 2PC over
-  PostgreSQL prepared transactions has a real cost in
-  coordinator and journaling code.
+- Module 3 is roughly 2.5× the monolith: hand-rolling 2PC
+  over PostgreSQL prepared transactions has a real cost in
+  coordinator, journaling, **and crash-recovery** code.
 - Module 4 grows past module 3 once the DLQ is fully
   managed: draining each DLQ into Postgres, exposing
   `/admin/dlq` for inspect / replay / discard, and the

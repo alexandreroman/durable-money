@@ -34,9 +34,11 @@ its operational cost is *visible* in the code.
     ├── pom.xml
     └── src/main/
         ├── java/.../transfer/
+        │   ├── Application.java               # @EnableScheduling
         │   ├── TransferController.java
         │   ├── TransferCoordinator.java       # drives the 3-participant 2PC
         │   ├── TransferDecisionRepository.java # REQUIRES_NEW durability anchor
+        │   ├── TwoPhaseCommitRecovery.java    # @Scheduled orphan-xact scanner
         │   └── ...
         └── resources/
             ├── application.yaml
@@ -56,7 +58,10 @@ participants:
 written via a `REQUIRES_NEW` transaction *before* the
 commit phase, recording whether the global outcome is
 `COMMIT` or `ABORT`. A coordinator crash after this row
-is durable can resume in a known-good state.
+is durable can resume in a known-good state. Each row
+carries `source_account_id`, `target_account_id`,
+`amount`, the full participant xid list, and
+`finalized_at` (NULL until phase 2 has completed).
 
 ## Pedagogical goals
 
@@ -83,6 +88,8 @@ graph TD
     Transfer -->|"INSERT transfer_decisions<br/>REQUIRES_NEW"| DB
     Transfer -->|"/xa/{xid}/commit or rollback"| Account
     Account --> DB
+    Recovery["@Scheduled recovery"] -.->|"poll WHERE finalized_at IS NULL"| DB
+    Recovery -.->|"/xa/{xid}/commit or rollback"| Account
 ```
 
 The coordinator's order matters and is deliberately
@@ -177,6 +184,37 @@ locked until commit/rollback. The xid format is
 `transfer-{uuid}-(debit|credit|journal)` and is validated
 on the participant side.
 
+### Coordinator crash recovery
+
+Each `transfer_decisions` row carries the durable
+global decision (`COMMIT` or `ABORT`) and the full
+participant list of xids. Phase 2 reads the row,
+finalizes every xid, and only then sets `finalized_at`
+on the row. A row with `finalized_at IS NULL` is by
+definition unfinished work.
+
+`TwoPhaseCommitRecovery` is a `@Scheduled` task that
+runs every 30 seconds, selects
+`transfer_decisions WHERE finalized_at IS NULL AND
+decided_at < now() - 5s` (the 5-second grace period
+keeps the scanner from racing the original
+coordinator), and replays phase 2 for each row.
+Both the remote participants and the local journal
+finalizer gate on `pg_prepared_xacts`, so a
+`COMMIT PREPARED` / `ROLLBACK PREPARED` for an xid
+that is no longer prepared is a no-op — the recovery
+calls are idempotent end-to-end.
+
+The xid is added to the participant list *before* the
+prepare HTTP call is issued. A 4xx business failure
+(participant explicitly said "not prepared") removes
+the xid from the list. Any other outcome — 5xx,
+timeout, RuntimeException — keeps the xid in the list,
+because the prepare may have actually succeeded on the
+server. The recovery loop will roll back whatever was
+actually prepared, leaving the system in a consistent
+state.
+
 ## Failure modes and limitations
 
 The protocol restores atomicity but exposes the
@@ -186,20 +224,22 @@ operational cost of synchronous 2PC.
   row stays row-locked until the coordinator finalizes
   it. Slow networks, slow participants, or a stalled
   coordinator amplify lock contention quickly.
-- **Coordinator is a single point of failure.** If the
-  transfer-service crashes between prepare and commit,
-  prepared transactions stay in `pg_prepared_xacts` until
-  someone (a human or a recovery process) decides their
-  fate based on `transfer_decisions`.
+- **Coordinator crashes are recoverable, but not for
+  free.** The `@Scheduled` recovery loop self-heals
+  orphan prepared transactions using `transfer_decisions`
+  as the durability anchor, so the transfer-service is
+  no longer a hard single point of failure. However, the
+  loop is unbounded — it will retry the same decision
+  every 30 seconds forever if the participant stays
+  unreachable. Production would need alerting on
+  long-pending decisions, a dead-letter for decisions
+  whose participants are permanently gone, structured
+  operator runbooks, and dashboards.
 - **In-doubt transactions consume server resources.**
   PostgreSQL's `max_prepared_transactions` is a hard
   cap. A flood of stuck prepared xacts can deny service
-  to the entire database.
-- **Recovery code is non-trivial.** Idempotent `COMMIT
-  PREPARED` / `ROLLBACK PREPARED` (gated on
-  `pg_prepared_xacts`) is a tutorial-grade
-  approximation. Production would need a recovery scan
-  loop, alerting, and operator runbooks.
+  to the entire database — and the recovery loop only
+  helps if the participants come back.
 - **Synchronous and chatty.** Every transfer needs at
   least 2 prepare calls + 2 finalize calls + the local
   journal — and the client waits the full round trip.
