@@ -32,7 +32,7 @@ in the DLQ).
 │       │   └── ...
 │       └── resources/
 │           ├── application.yaml
-│           ├── schema.sql                     # accounts + dlq_messages tables
+│           ├── schema.sql                     # accounts + transfers (idempotency) + dlq_messages
 │           └── data.sql                       # seed Alice + Bob
 └── transfer-service/         # Initiator + result handler, port 8080
     ├── Dockerfile

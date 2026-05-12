@@ -161,7 +161,7 @@ task build
 | Method | Path                          | Behavior                                                  |
 | ------ | ----------------------------- | --------------------------------------------------------- |
 | POST   | `/transfers`                  | Async; `202 Accepted` with `{transferId}`. Starts a workflow whose ID is the transferId. |
-| GET    | `/transfers/{workflowId}`     | Returns `{workflowId, status}` from `WorkflowClient.describe()` |
+| GET    | `/transfers/{workflowId}`     | Returns `{workflowId, status}` via `workflowClient.newUntypedWorkflowStub(id).describe()` |
 
 `account-service` (port `9080`):
 
