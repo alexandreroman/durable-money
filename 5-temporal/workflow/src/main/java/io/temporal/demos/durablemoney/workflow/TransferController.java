@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static io.temporal.client.WorkflowClient.start;
@@ -54,7 +53,7 @@ class TransferController {
 
     @GetMapping("/{workflowId}")
     Map<String, Object> getTransfer(@PathVariable String workflowId) {
-        var stub = workflowClient.newUntypedWorkflowStub(workflowId, Optional.empty(), Optional.empty());
+        var stub = workflowClient.newUntypedWorkflowStub(workflowId);
         var desc = stub.describe();
         return Map.of(
             "workflowId", workflowId,
