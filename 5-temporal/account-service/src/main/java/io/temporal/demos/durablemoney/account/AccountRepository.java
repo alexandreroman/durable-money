@@ -68,6 +68,18 @@ class AccountRepository {
      * this leg runs), or {@code false} if a row already existed (RabbitMQ at-least-once
      * redelivery — caller must short-circuit and skip the balance update).
      */
+    boolean hasTransfer(UUID transferId, String operation, UUID accountId) {
+        return jdbcClient.sql("""
+                        SELECT EXISTS(
+                            SELECT 1 FROM transfers
+                            WHERE transfer_id = ? AND operation = ? AND account_id = ?
+                        )
+                        """)
+                .params(transferId, operation, accountId)
+                .query(Boolean.class)
+                .single();
+    }
+
     boolean recordTransfer(UUID transferId, String operation, UUID accountId, BigDecimal amount) {
         var inserted = jdbcClient.sql("""
                         INSERT INTO transfers (transfer_id, operation, account_id, amount)

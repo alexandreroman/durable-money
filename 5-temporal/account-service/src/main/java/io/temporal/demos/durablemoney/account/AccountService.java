@@ -76,8 +76,14 @@ class AccountService {
 
     @Transactional
     Account reverseDebit(UUID transferId, UUID id, BigDecimal amount) {
-        // Compensation for a prior debit. Recorded under a distinct operation key so it does not
-        // collide with the original debit's idempotency slot.
+        // Saga registers this compensation BEFORE the debit runs, so it may fire even when no
+        // debit was ever recorded (e.g. INSUFFICIENT_FUNDS rejected the debit before any DB write).
+        // Crediting in that case would fabricate money. Gate on the existence of the original
+        // "debit" slot; the separate "reverse_debit" slot still guarantees idempotency on re-runs.
+        if (!accountRepository.hasTransfer(transferId, "debit", id)) {
+            return accountRepository.findById(id)
+                    .orElseThrow(() -> new AccountNotFoundException(id));
+        }
         return applyCredit(transferId, "reverse_debit", id, amount);
     }
 
